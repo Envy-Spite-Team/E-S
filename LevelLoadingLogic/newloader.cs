@@ -1,201 +1,168 @@
+using HarmonyLib;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using BepInEx;
-using UnityEngine.UI;
-using TMPro;
 
-namespace DoomahLevelLoader:
-
-public static class LoaderScene
+namespace DoomahLevelLoader
 {
-	public static string LevelsPath { get; } = Plugin.getConfigPath();
-	public static string UnpackedLevelsPath { get; } = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-	public static List<AssetBundleInfo> AssetBundles { get; } = new List<AssetBundleInfo>();
-
-	// Load all level files and unzip them asynchronously
-	public static async Task LoadLevels()
-	{
-		var doomahFiles = Directory.GetFiles(LevelsPath, "*.doomah");
-		var unzipTasks = new List<Task>();
-
-		// Create a task for each file to unzip and load
-		foreach (var file in doomahFiles)
-		{
-			unzipTasks.Add(UnzipAndLoadBundles(file));
-		}
-
-		await Task.WhenAll(unzipTasks);
-	}
-
-	// Unload all asset bundles and reload levels
-	public static async Task RefreshLevels()
-	{
-		AssetBundles.ForEach(bundle => bundle.Bundle.Unload(true));
-		await LoadLevels();
-	}
-
-	// Unzip the file and load the asset bundles
-    private static async Task UnzipAndLoadBundles(string doomahFile)
+    public static class LoaderScene
     {
-        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(doomahFile);
-        var extractPath = Path.Combine(UnpackedLevelsPath, fileNameWithoutExtension);
+        public static string LevelsPath => Plugin.getConfigPath();
+        public static string UnpackedLevelsPath => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        public static readonly List<AssetBundleInfo> AssetBundles = [];
 
-        // Calculate file size
-        var fileSize = CalculateFileSize(doomahFile);
+        public static void LoadLevels() => Directory.GetFiles(LevelsPath, "*.doomah").Do(UnzipAndLoadBundles);
 
-        if (Directory.Exists(extractPath)) Directory.Delete(extractPath, true);
-
-        ZipFile.ExtractToDirectory(doomahFile, extractPath);
-
-        // Load level information from info.json
-        var levelInfo = LoadLevelInfo(Path.Combine(extractPath, "info.json"));
-        var levelImages = LoadLevelImages(levelInfo?.LevelImages, extractPath);
-
-        foreach (var bundleFile in Directory.GetFiles(extractPath, "*.bundle"))
+        public static void RefreshLevels()
         {
-            var bundle = AssetBundle.LoadFromFile(bundleFile);
-            if (bundle == null) continue;
+            AssetBundles.ForEach(bundle => bundle.Bundle.Unload(true));
+            LoadLevels();
+        }
 
-            // Determine scene paths based on whether the level is a campaign
-            var scenePaths = levelInfo?.IsCampaign == true && levelInfo.Scenes != null
-                ? new List<string>(levelInfo.Scenes)
-                : new List<string>(bundle.GetAllScenePaths());
+        private static void UnzipAndLoadBundles(string doomahFile)
+        {
+            string extractPath = Path.Combine(UnpackedLevelsPath, Path.GetFileNameWithoutExtension(doomahFile));
 
-            AssetBundles.Add(new AssetBundleInfo
+            if (Directory.Exists(extractPath)) Directory.Delete(extractPath, true);
+            ZipFile.ExtractToDirectory(doomahFile, extractPath);
+
+            foreach (string bundleFile in Directory.GetFiles(extractPath, "*.bundle"))
             {
-                Bundle = bundle,
-                ScenePaths = scenePaths,
-                LevelNames = levelInfo?.LevelNames,
-                LevelImages = levelImages,
-                FileSize = fileSize,
-                Author = levelInfo?.Author,
-                IsCampaign = levelInfo?.IsCampaign ?? false
-            });
+                AssetBundles.Add(new(bundleFile, extractPath));
+            }
+        }
+
+        public static void LoadScene(LevelButtonScript buttonScript)
+        {
+            if (string.IsNullOrEmpty(buttonScript?.SceneToLoad)) return;
+            SceneHelper.Instance.LoadSceneAsync(buttonScript.SceneToLoad, false);
+
+            SceneHelper.ShowLoadingBlocker();
+            SceneManager.LoadSceneAsync(buttonScript.SceneToLoad).completed += _ => SceneHelper.DismissBlockers();
+        }
+
+        public static void OpenFilesFolder() => Process.Start(Plugin.getConfigPath().Replace("\\", "/"));
+
+        public static void SetLevelButtonScriptProperties(LevelButtonScript buttonScript, AssetBundleInfo bundleInfo)
+        {
+            buttonScript.BundleName = bundleInfo.Bundle;
+            buttonScript.SceneToLoad = bundleInfo.ScenePaths.FirstOrDefault();
+            buttonScript.OpenCamp = bundleInfo.IsCampaign;
+            buttonScript.FileSize.text = bundleInfo.FileSize;
+
+            buttonScript.Author.text = bundleInfo.Author ?? "Unknown";
+            buttonScript.LevelName.text = bundleInfo.LevelNames.Any() ? bundleInfo.LevelNames.First() : "Unnamed";
+
+            if (bundleInfo.LevelImages.Values.FirstOrDefault() is { } firstImage)
+            {
+                buttonScript.LevelImageButtonThing.sprite = Sprite.Create(firstImage, new Rect(0, 0, firstImage.width, firstImage.height), Vector2.zero);
+            }
+
+            buttonScript.NoLevel.gameObject.SetActive(!bundleInfo.LevelNames.Any());
+            buttonScript.LevelImageButtonThing.gameObject.SetActive(bundleInfo.LevelNames.Any());
         }
     }
 
-	// Method to calculate file size
-	private static float CalculateFileSize(string filePath)
-	{
-		FileInfo fileInfo = new FileInfo(filePath);
-		double bytes = fileInfo.Length;
-
-		string[] suffix = { "B", "KB", "MB", "GB", "TB" };
-
-		for (int i = 0; i < suffix.Length - 1 && bytes >= 1024; i++)
-		{
-			bytes /= 1024;
-		}
-
-		return (float)Math.Round(bytes, 2);
-	}
-
-	// Load level information from the info.json file
-    private static LevelInfo LoadLevelInfo(string infoJsonPath)
+    public class AssetBundleInfo
     {
-        if (!File.Exists(infoJsonPath)) return null;
-        var json = File.ReadAllText(infoJsonPath);
-        var levelInfo = JsonUtility.FromJson<LevelInfo>(json);
-        return levelInfo;
+        public AssetBundle Bundle;
+        public List<string> ScenePaths;
+        public List<string> LevelNames;
+        public Dictionary<string, Texture2D> LevelImages = [];
+        public string FileSize;
+        public string Author;
+        public bool IsCampaign;
+
+        public AssetBundleInfo(string bundleFile, string extractPath)
+        {
+            string infoPath = Path.Combine(extractPath, "info.json");
+            LevelInfo levelInfo = !File.Exists(infoPath) ? null : new(infoPath);
+
+            Bundle = AssetBundle.LoadFromFile(bundleFile);
+            ScenePaths = new(levelInfo?.IsCampaign == true && levelInfo.Scenes != null ? levelInfo.Scenes : Bundle.GetAllScenePaths());
+            LevelNames = levelInfo?.LevelNames;
+            LevelImages = LoadLevelImages(levelInfo?.LevelImages);
+            FileSize = GetFileSize();
+            Author = levelInfo?.Author;
+            IsCampaign = levelInfo?.IsCampaign ?? false;
+
+            Dictionary<string, Texture2D> LoadLevelImages(List<string> imagePaths)
+            {
+                Dictionary<string, Texture2D> levelImages = [];
+                if (imagePaths == null) return levelImages;
+
+                foreach (string imagePath in imagePaths)
+                {
+                    string fullImagePath = Path.Combine(extractPath, imagePath);
+                    if (!File.Exists(fullImagePath)) continue;
+
+                    byte[] imageBytes = File.ReadAllBytes(fullImagePath);
+                    Texture2D levelImage = new(2, 2);
+                    levelImage.LoadImage(imageBytes);
+                    levelImages[imagePath] = levelImage;
+                }
+
+                return levelImages;
+            }
+
+            // https://stackoverflow.com/a/11124118
+            string GetFileSize()
+            {
+                long value = new FileInfo(bundleFile).Length;
+                string suffix;
+                double readable;
+                switch (Math.Abs(value))
+                {
+                    case >= 0x1000000000000000:
+                        suffix = "EiB";
+                        readable = value >> 50;
+                        break;
+                    case >= 0x4000000000000:
+                        suffix = "PiB";
+                        readable = value >> 40;
+                        break;
+                    case >= 0x10000000000:
+                        suffix = "TiB";
+                        readable = value >> 30;
+                        break;
+                    case >= 0x40000000:
+                        suffix = "GiB";
+                        readable = value >> 20;
+                        break;
+                    case >= 0x100000:
+                        suffix = "MiB";
+                        readable = value >> 10;
+                        break;
+                    case >= 0x400:
+                        suffix = "KiB";
+                        readable = value;
+                        break;
+                    default:
+                        return value.ToString("0 B");
+                }
+
+                return (readable / 1024).ToString("0.## ") + suffix;
+            }
+        }
     }
 
-	// Load level images from the specified paths
-	private static Dictionary<string, Texture2D> LoadLevelImages(List<string> imagePaths, string extractPath)
-	{
-		var levelImages = new Dictionary<string, Texture2D>();
-		if (imagePaths == null) return levelImages;
+    [Serializable]
+    public class LevelInfo
+    {
+        public string Author;
+        public string LevelName;
+        public bool IsCampaign;
+        public List<string> Scenes = [];
+        public List<string> LevelNames = [];
+        public List<string> LevelImages = [];
 
-		foreach (var imagePath in imagePaths)
-		{
-			var fullImagePath = Path.Combine(extractPath, imagePath);
-			if (!File.Exists(fullImagePath)) continue;
-
-			var imageBytes = File.ReadAllBytes(fullImagePath);
-			var levelImage = new Texture2D(2, 2);
-			levelImage.LoadImage(imageBytes);
-			levelImages[imagePath] = levelImage;
-		}
-
-		return levelImages;
-	}
-	
-	public static void Loadscene(LevelButtonScript buttonScript)
-	{
-		if (buttonScript == null || string.IsNullOrEmpty(buttonScript.SceneToLoad)) return;
-
-		SceneManager.LoadSceneAsync(buttonScript.SceneToLoad).completed += asyncOperation => SceneHelper.DismissBlockers();
-		SceneHelper.ShowLoadingBlocker();
-	}
-	
-	public static void OpenFilesFolder()
-	{
-		string configPath = Plugin.getConfigPath().Replace("\\", "/");
-		string url = "file://";
-
-		switch (Application.platform)
-		{
-			case RuntimePlatform.WindowsPlayer:
-				url += "/" + configPath;
-				break;
-			case RuntimePlatform.OSXPlayer:
-			case RuntimePlatform.LinuxPlayer:
-				url += configPath;
-				break;
-			default:
-				UnityEngine.Debug.LogWarning("BROTHER WHAT IS YOUR OS?????");
-				return;
-		}
-		Application.OpenURL(url);
-	}
-	
-	public static void SetLevelButtonScriptProperties(LevelButtonScript buttonScript, AssetBundleInfo bundleInfo)
-	{
-		buttonScript.BundleName = bundleInfo.Bundle;
-		buttonScript.SceneToLoad = bundleInfo.ScenePaths.Count > 0 ? bundleInfo.ScenePaths[0] : null;
-		buttonScript.OpenCamp = bundleInfo.IsCampaign;
-		buttonScript.FileSize.text = $"{bundleInfo.FileSize} MB";
-		
-		buttonScript.Author.text = bundleInfo.Author ?? "Unknown";
-		buttonScript.LevelName.text = bundleInfo.LevelNames.Count > 0 ? bundleInfo.LevelNames[0] : "Unnamed";
-		
-		if (bundleInfo.LevelImages.Count > 0)
-		{
-			var firstImage = bundleInfo.LevelImages.Values.FirstOrDefault();
-			if (firstImage != null)
-			{
-				buttonScript.LevelImageButtonThing.sprite = Sprite.Create(firstImage, new Rect(0, 0, firstImage.width, firstImage.height), Vector2.zero);
-			}
-		}
-		
-		buttonScript.NoLevel.gameObject.SetActive(bundleInfo.LevelNames.Count == 0);
-		buttonScript.LevelImageButtonThing.gameObject.SetActive(!bundleInfo.LevelNames.Count == 0);
-	}
-}
-
-public class AssetBundleInfo
-{
-	public AssetBundle Bundle { get; set; }
-	public List<string> ScenePaths { get; set; }
-	public List<string> LevelNames { get; set; }
-	public Dictionary<string, Texture2D> LevelImages { get; set; } = new Dictionary<string, Texture2D>();
-	public float FileSize { get; set; }
-	public string Author { get; set; }
-	public bool IsCampaign { get; set; }
-}
-
-[Serializable]
-public class LevelInfo
-{
-	public string Author { get; set; }
-	public string LevelName { get; set; }
-	public bool IsCampaign { get; set; }
-	public List<string> Scenes { get; set; }
-	public List<string> LevelNames { get; set; }
-	public List<string> LevelImages { get; set; }
+        public LevelInfo(string path) => JsonUtility.FromJson<LevelInfo>(File.ReadAllText(path));
+    }
 }

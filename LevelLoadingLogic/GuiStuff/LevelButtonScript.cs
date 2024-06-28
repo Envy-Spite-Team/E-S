@@ -1,45 +1,34 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System.IO;
-using TMPro;
 
 namespace DoomahLevelLoader
 {
     public class LevelButtonScript : MonoBehaviour
     {
-        private static LevelButtonScript instance;
-
         public Image LevelImageButtonThing;
-		public Button LevelButtonReal;
-		public TextMeshProUGUI NoLevel;
-		public TextMeshProUGUI FileSize;
-		public TextMeshProUGUI Author;
-		public TextMeshProUGUI LevelName;
-		
-		[HideInInspector]
-		public AssetBundle BundleName;
-		
-		[HideInInspector]
-		public string SceneToLoad;
-		
-		[HideInInspector]
-		public bool OpenCamp;
-		
+        public Button LevelButtonReal;
+        public TextMeshProUGUI NoLevel;
+        public TextMeshProUGUI FileSize;
+        public TextMeshProUGUI Author;
+        public TextMeshProUGUI LevelName;
+
+        [HideInInspector]
+        public AssetBundle BundleName;
+
+        [HideInInspector]
+        public string SceneToLoad;
+
+        [HideInInspector]
+        public bool OpenCamp;
+
+        private static LevelButtonScript instance;
         public static LevelButtonScript Instance
         {
             get
             {
-                if (instance == null)
-                {
-                    instance = FindObjectOfType<LevelButtonScript>();
-
-                    if (instance == null)
-                    {
-                        UnityEngine.Debug.LogError("LevelButtonScript instance not found in the scene.");
-                    }
-                }
+                instance ??= FindObjectOfType<LevelButtonScript>();
+                if (instance == null) Debug.LogError("LevelButtonScript instance not found in the scene.");
                 return instance;
             }
         }
