@@ -18,6 +18,15 @@ namespace DoomahLevelLoader
 		public TextMeshProUGUI Author;
 		public TextMeshProUGUI LevelName;
 		
+		[HideInInspector]
+		public AssetBundle BundleName;
+		
+		[HideInInspector]
+		public string SceneToLoad;
+		
+		[HideInInspector]
+		public bool OpenCamp;
+		
         public static LevelButtonScript Instance
         {
             get
