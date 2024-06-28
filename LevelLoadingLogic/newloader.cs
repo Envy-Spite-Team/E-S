@@ -40,8 +40,8 @@ namespace DoomahLevelLoader
             AssetBundles.Clear();
 
             ClearAndRecreateUnpackedLevelsFolder();
-
             LoadLevels();
+			EnvyLoaderMenu.UpdateLevelListing();
         }
 
         private static void ClearAndRecreateUnpackedLevelsFolder()
@@ -186,28 +186,35 @@ namespace DoomahLevelLoader
         }
     }
 
-    [Serializable]
-    public class LevelInfo
-    {
-        public string Author;
-        public string LevelName;
-        public bool IsCampaign;
-        public List<string> Scenes = [];
-        public List<string> LevelNames = [];
-        public List<string> LevelImages = [];
+	[Serializable]
+	public class LevelInfo
+	{
+		public string Author;
+		public string LevelName;
+		public bool IsCampaign;
+		public List<string> Scenes = new List<string>();
+		public List<string> LevelNames = new List<string>();
+		public List<string> LevelImages = new List<string>();
 
-        public static LevelInfo LoadFromJson(string path) => JsonUtility.FromJson<LevelInfo>(File.ReadAllText(path));
+		public static LevelInfo LoadFromJson(string path) => JsonUtility.FromJson<LevelInfo>(File.ReadAllText(path));
 
-        public static LevelInfo LoadFromText(string path)
-        {
-            if (!File.Exists(path)) return null;
+		public static LevelInfo LoadFromText(string path)
+		{
+			if (!File.Exists(path)) return null;
 
-            LevelInfo info = new();
-            string[] lines = File.ReadAllLines(path);
-            if (lines.Length > 0) info.Author = lines[0].Trim();
-            if (lines.Length > 1) info.LevelNames = [lines[1].Trim()];
-            info.IsCampaign = false;
-            return info;
-        }
-    }
+			LevelInfo info = new LevelInfo();
+			string[] lines = File.ReadAllLines(path);
+			if (lines.Length > 0) info.Author = lines[0].Trim();
+			if (lines.Length > 1) info.LevelNames.Add(lines[1].Trim());
+			info.IsCampaign = false;
+			string directoryPath = Path.GetDirectoryName(path);
+			string[] pngFiles = Directory.GetFiles(directoryPath, "*.png");
+			
+			if (pngFiles.Length > 0)
+			{
+				info.LevelImages.Add(pngFiles[0]);
+			}
+			return info;
+		}
+	}
 }

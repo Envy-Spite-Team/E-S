@@ -33,10 +33,11 @@ public class EnvyLoaderMenu : MonoBehaviour
 				instance = FindObjectOfType<EnvyLoaderMenu>();
 				if (instance == null)
 				{
-					Debug.LogError("EnvyScreen prefab not found in the terminal bundle. This error may look scary but it's probably nothing to worry about.");
+					Debug.LogError("EnvyScreen prefab not found or EnvyLoaderMenu instance not initialized.");
+					return null;
 				}
 			}
-			if (instance.AlreadyStarted == false)
+			if (!instance.AlreadyStarted)
 			{
 				instance.AlreadyStarted = true;
 				instance.Start();

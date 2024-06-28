@@ -24,11 +24,6 @@ namespace DoomahLevelLoader
 
         public static Plugin Instance => _instance;
 
-        public static void foldershitAsync()
-        {
-            Loaderscene.RefreshLevels();
-        }
-
         public static string getConfigPath()
         {
             return Path.Combine(Paths.ConfigPath + Path.DirectorySeparatorChar + "EnvyLevels");
@@ -94,7 +89,6 @@ namespace DoomahLevelLoader
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
-			foldershitAsync();
         }
 		
 		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -105,7 +99,6 @@ namespace DoomahLevelLoader
 			if (isNotBootstrapOrIntro)
 			{
 				ShaderManager.CreateShaderDictionary();
-				foldershitAsync();
 				InstantiateEnvyScreen(isMainMenu);
 			}
 
@@ -141,7 +134,6 @@ namespace DoomahLevelLoader
 			if (SceneHelper.CurrentScene == "Main Menu")
 			{
 				InstantiateEnvyScreen(true);
-                foldershitAsync();
                 ShaderManager.CreateShaderDictionary();
             }
         }
