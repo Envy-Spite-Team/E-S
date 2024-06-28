@@ -6,6 +6,10 @@ using System.IO;
 using TMPro;
 using Newtonsoft.Json;
 using System.Reflection;
+using System.Net.Http;
+using System.Threading.Tasks;
+using UnityEngine.Networking;
+using System.Threading;
 
 namespace DoomahLevelLoader
 {
@@ -14,11 +18,11 @@ namespace DoomahLevelLoader
         private static EnvyLoaderMenu instance;
 
         public GameObject ContentStuff;
-        public Button MenuOpener;
         public GameObject LevelsMenu;
         public GameObject LevelsButton;
-        public Button Goback;
         public GameObject FuckingPleaseWait;
+        public TextMeshProUGUI MOTDMessage;
+        private bool AlreadyStarted = false;
 
         public static EnvyLoaderMenu Instance
         {
@@ -32,15 +36,49 @@ namespace DoomahLevelLoader
                         Debug.LogError("EnvyScreen prefab not found in the terminal bundle. This error may look scary but it's probably nothing to worry about.");
                     }
                 }
+                if (instance.AlreadyStarted == false)
+                {
+                    instance.AlreadyStarted = true;
+                    instance.Start();
+                }
                 return instance;
             }
         }
 
-        private void Start()
+        public void Start()
         {
-            MenuOpener.onClick.AddListener(OpenLevelsMenu);
-            Goback.onClick.AddListener(GoBackToMenu);
             EnvyLoaderMenu.CreateLevels();
+
+            Debug.Log("WAS THAT THE ERROR OF 87?");
+            UnityWebRequest www = UnityWebRequest.Get("https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/main/motd.txt");
+            Debug.Log("Test 0");
+            yield return www.SendWebRequest();
+
+            Debug.Log("Test 1");
+            if (www.isNetworkError || www.isHttpError)
+            {
+                Debug.Log(www.error);
+                Debug.Log("Test 2");
+            }
+            else
+            {
+                // Show results as text
+                Debug.Log(www.downloadHandler.text);
+
+                // Or retrieve results as binary data
+                byte[] results = www.downloadHandler.data;
+
+                Debug.Log("Shit is about to get real.");
+                if (www.downloadHandler.text != null)
+                {
+                    Debug.Log(www.downloadHandler.text);
+                    Instance.MOTDMessage.text = www.downloadHandler.text;
+                }
+                else
+                {
+                    Debug.LogError("HTTP request failed, check if you even have WIFI.");
+                }
+            }
         }
 
         public static void CreateLevels()
@@ -122,20 +160,6 @@ namespace DoomahLevelLoader
             {
                 Instance.StartCoroutine(UpdateLevelListingCoroutine());
             }
-        }
-
-        private void OpenLevelsMenu()
-        {
-            LevelsMenu.SetActive(true);
-            MenuOpener.gameObject.SetActive(false);
-            MainMenuAgony.isAgonyOpen = true;
-        }
-
-        private void GoBackToMenu()
-        {
-            LevelsMenu.SetActive(false);
-            MenuOpener.gameObject.SetActive(true);
-            MainMenuAgony.isAgonyOpen = false;
         }
     }
 
