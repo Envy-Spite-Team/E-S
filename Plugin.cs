@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using Logic;
 using System.Reflection;
 using System.IO;
+using System.Net.Http;
+using TMPro;
 
 namespace DoomahLevelLoader
 {
@@ -21,8 +23,7 @@ namespace DoomahLevelLoader
 		public static bool IsCustomLevel = false;
         private static Plugin _instance;
 
-
-         public static Plugin Instance => _instance;
+        public static Plugin Instance => _instance;
 
         public static async Task foldershitAsync()
         {
@@ -32,6 +33,42 @@ namespace DoomahLevelLoader
         public static string getConfigPath()
         {
             return Path.Combine(Paths.ConfigPath + Path.DirectorySeparatorChar + "EnvyLevels");
+        }
+
+        public static GameObject FindObjectEvenIfDisabled(string rootName, string objPath = null, int childNum = 0, bool useChildNum = false)
+        {
+            GameObject obj = null;
+            GameObject[] objs = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+            bool gotRoot = false;
+            foreach (GameObject obj1 in objs)
+            {
+                if (obj1.name == rootName)
+                {
+                    obj = obj1;
+                    gotRoot = true;
+                }
+            }
+            if (!gotRoot)
+                goto returnObject;
+            else
+            {
+                GameObject obj2 = obj;
+                if (objPath != null)
+                {
+                    obj2 = obj.transform.Find(objPath).gameObject;
+                    if (!useChildNum)
+                    {
+                        obj = obj2;
+                    }
+                }
+                if (useChildNum)
+                {
+                    GameObject obj3 = obj2.transform.GetChild(childNum).gameObject;
+                    obj = obj3;
+                }
+            }
+        returnObject:
+            return obj;
         }
 
         private void Awake()
@@ -50,7 +87,7 @@ namespace DoomahLevelLoader
             }
 			
             SceneManager.sceneLoaded += OnSceneLoaded;
-            SceneManager.sceneUnloaded += OnSceneUnloaded;		
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
 			_ = Loaderscene.Setup();
 			Loaderscene.ExtractSceneName();
         }
@@ -64,18 +101,24 @@ namespace DoomahLevelLoader
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            if (SceneHelper.CurrentScene != "Bootstrap")
+            {
+                if (SceneHelper.CurrentScene != "Intro")
+                {
+                    ShaderManager.CreateShaderDictionary();
+                    _ = foldershitAsync();
+                    InstantiateEnvyScreen(false);
+                }
+            }
             if (ShaderManager.shaderDictionary.Count <= 0)
             {
                 StartCoroutine(ShaderManager.LoadShadersAsync());
-            }
-            if (SceneHelper.CurrentScene == "uk_construct")
-            {
             }
             if (SceneHelper.CurrentScene == "Main Menu")
             {
                 ShaderManager.CreateShaderDictionary();
                 _ = foldershitAsync();
-                InstantiateEnvyScreen();
+                InstantiateEnvyScreen(true);
             }
             if (scene.name == Loaderscene.LoadedSceneName)
             {
@@ -105,33 +148,39 @@ namespace DoomahLevelLoader
             }
 			if (SceneHelper.CurrentScene == "Main Menu")
 			{
-				InstantiateEnvyScreen();
+				InstantiateEnvyScreen(true);
                 _ = foldershitAsync();
                 ShaderManager.CreateShaderDictionary();
             }
         }
-		
-		private void InstantiateEnvyScreen()
-		{
-			GameObject envyScreenPrefab = terminal.LoadAsset<GameObject>("envyscreen.prefab");
 
-			if (envyScreenPrefab == null)
+        private void InstantiateEnvyScreen(bool mainMenu)
+		{
+            GameObject envyScreenPrefab = terminal.LoadAsset<GameObject>("EnvyScreen.prefab");
+            // Fun Fact: my dumbass forgot to put envyscreen in the assetbundle and i was stuck debugging it for 2 hours RAHHHHHHHHHHHHH --thebluenebula
+
+            if (envyScreenPrefab == null)
 			{
 				Debug.LogError("EnvyScreen prefab not found in the terminal bundle.");
 				return;
 			}
 
-			GameObject canvasObject = GameObject.Find("/Canvas/Main Menu (1)");
-			if (canvasObject == null)
+            GameObject canvasObject = GameObject.Find("/Canvas/Main Menu (1)");
+            if (mainMenu == false)
+            {
+                canvasObject = FindObjectEvenIfDisabled("Canvas", "PauseMenu");
+            }
+
+            if (canvasObject == null)
 			{
-				return;
+                return;
 			}
 
 			GameObject instantiatedObject = Instantiate(envyScreenPrefab);
 
-			instantiatedObject.transform.SetParent(canvasObject.transform, false);
+            instantiatedObject.transform.SetParent(canvasObject.transform, false);
 			instantiatedObject.transform.localPosition = Vector3.zero;
-			instantiatedObject.transform.localScale = new Vector3(1.75f, 1.75f, 1.75f);
+			instantiatedObject.transform.localScale = new Vector3(1f, 1f, 1f);
 		}
 
 		private void InstantiateTerminal()

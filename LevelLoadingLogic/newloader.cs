@@ -61,6 +61,7 @@ namespace DoomahLevelLoader
                 {
                     string fileName = Path.GetFileName(doomahFile);
                     UnityEngine.Debug.LogError($"Failed to extract {fileName}! Please uninstall map or ask creator to update!");
+                    UnityEngine.Debug.LogError($"^^^^^^^^^^^^^ blah blah blah shut up bro your weird (ignore that)");
                 }
             }
             EnvyLoaderMenu.UpdateLevelListing();
@@ -109,6 +110,8 @@ namespace DoomahLevelLoader
         {
             string[] bundleFiles = Directory.GetFiles(folderPath, "*.bundle");
 
+            // If you want to implement custom campaigns in the future this part is what you want to modify. - thebluenebula
+
             foreach (string bundleFile in bundleFiles)
             {
                 await Task.Run(() =>
@@ -118,6 +121,10 @@ namespace DoomahLevelLoader
                     {
                         loadedAssetBundles.Add(assetBundle);
                         bundleFolderPaths.Add(Path.GetDirectoryName(bundleFile));
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.LogError("The assetbundle for the level returned null, either it is corrupt or Envy is COMPLETELY BROKEN right now.");
                     }
                 });
             }
