@@ -1,8 +1,16 @@
-lib
-meshwhatever.sln
-obj
-bin/Debug/netstandard2.0
-meshwhatever.sln
-.vs
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Sessions
+.vs/
+
+# Windows
+desktop.ini
+
+# Libraries
+[Ll]ib/
+
+# Misc
 Properties
 compile.bat
