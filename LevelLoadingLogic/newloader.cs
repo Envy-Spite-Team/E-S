@@ -1,320 +1,168 @@
+using HarmonyLib;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using BepInEx;
-using UnityEngine.UI;
-using TMPro;
 
 namespace DoomahLevelLoader
 {
-    public static class Loaderscene
+    public static class LoaderScene
     {
-        public static List<AssetBundle> loadedAssetBundles = new List<AssetBundle>();
-        public static int currentAssetBundleIndex = 0;
-        public static List<string> bundleFolderPaths = new List<string>();
-        private static EnvyLoaderMenu envyLoaderMenuScript;
+        public static string LevelsPath => Plugin.getConfigPath();
+        public static string UnpackedLevelsPath => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        public static readonly List<AssetBundleInfo> AssetBundles = [];
 
-        public static string LoadedSceneName { get; set; }
-        private static string executablePath;
-        private static string directoryPath;
+        public static void LoadLevels() => Directory.GetFiles(LevelsPath, "*.doomah").Do(UnzipAndLoadBundles);
 
-        static Loaderscene()
+        public static void RefreshLevels()
         {
-            executablePath = Assembly.GetExecutingAssembly().Location;
-            directoryPath = Path.GetDirectoryName(executablePath);
+            AssetBundles.ForEach(bundle => bundle.Bundle.Unload(true));
+            LoadLevels();
         }
 
-        public static string GetUnpackedLevelsPath()
+        private static void UnzipAndLoadBundles(string doomahFile)
         {
-            return Path.Combine(directoryPath, "UnpackedLevels");
-        }
+            string extractPath = Path.Combine(UnpackedLevelsPath, Path.GetFileNameWithoutExtension(doomahFile));
 
-        public static async Task Setup()
-        {
-            await RecreateUnpackedLevelsFolder(GetUnpackedLevelsPath());
-        }
+            if (Directory.Exists(extractPath)) Directory.Delete(extractPath, true);
+            ZipFile.ExtractToDirectory(doomahFile, extractPath);
 
-        public static async Task RecreateUnpackedLevelsFolder(string unpackedLevelsPath)
-        {
-            if (Directory.Exists(unpackedLevelsPath))
+            foreach (string bundleFile in Directory.GetFiles(extractPath, "*.bundle"))
             {
-                Directory.Delete(unpackedLevelsPath, true);
+                AssetBundles.Add(new(bundleFile, extractPath));
             }
-            Directory.CreateDirectory(unpackedLevelsPath);
-            string[] doomahFiles = Directory.GetFiles(Plugin.getConfigPath(), "*.doomah");
-            foreach (string doomahFile in doomahFiles)
-            {
-                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(doomahFile);
-                string levelFolderPath = Path.Combine(unpackedLevelsPath, fileNameWithoutExtension);
+        }
 
-                try
+        public static void LoadScene(LevelButtonScript buttonScript)
+        {
+            if (string.IsNullOrEmpty(buttonScript?.SceneToLoad)) return;
+            SceneHelper.Instance.LoadSceneAsync(buttonScript.SceneToLoad, false);
+
+            SceneHelper.ShowLoadingBlocker();
+            SceneManager.LoadSceneAsync(buttonScript.SceneToLoad).completed += _ => SceneHelper.DismissBlockers();
+        }
+
+        public static void OpenFilesFolder() => Process.Start(Plugin.getConfigPath().Replace("\\", "/"));
+
+        public static void SetLevelButtonScriptProperties(LevelButtonScript buttonScript, AssetBundleInfo bundleInfo)
+        {
+            buttonScript.BundleName = bundleInfo.Bundle;
+            buttonScript.SceneToLoad = bundleInfo.ScenePaths.FirstOrDefault();
+            buttonScript.OpenCamp = bundleInfo.IsCampaign;
+            buttonScript.FileSize.text = bundleInfo.FileSize;
+
+            buttonScript.Author.text = bundleInfo.Author ?? "Unknown";
+            buttonScript.LevelName.text = bundleInfo.LevelNames.Any() ? bundleInfo.LevelNames.First() : "Unnamed";
+
+            if (bundleInfo.LevelImages.Values.FirstOrDefault() is { } firstImage)
+            {
+                buttonScript.LevelImageButtonThing.sprite = Sprite.Create(firstImage, new Rect(0, 0, firstImage.width, firstImage.height), Vector2.zero);
+            }
+
+            buttonScript.NoLevel.gameObject.SetActive(!bundleInfo.LevelNames.Any());
+            buttonScript.LevelImageButtonThing.gameObject.SetActive(bundleInfo.LevelNames.Any());
+        }
+    }
+
+    public class AssetBundleInfo
+    {
+        public AssetBundle Bundle;
+        public List<string> ScenePaths;
+        public List<string> LevelNames;
+        public Dictionary<string, Texture2D> LevelImages = [];
+        public string FileSize;
+        public string Author;
+        public bool IsCampaign;
+
+        public AssetBundleInfo(string bundleFile, string extractPath)
+        {
+            string infoPath = Path.Combine(extractPath, "info.json");
+            LevelInfo levelInfo = !File.Exists(infoPath) ? null : new(infoPath);
+
+            Bundle = AssetBundle.LoadFromFile(bundleFile);
+            ScenePaths = new(levelInfo?.IsCampaign == true && levelInfo.Scenes != null ? levelInfo.Scenes : Bundle.GetAllScenePaths());
+            LevelNames = levelInfo?.LevelNames;
+            LevelImages = LoadLevelImages(levelInfo?.LevelImages);
+            FileSize = GetFileSize();
+            Author = levelInfo?.Author;
+            IsCampaign = levelInfo?.IsCampaign ?? false;
+
+            Dictionary<string, Texture2D> LoadLevelImages(List<string> imagePaths)
+            {
+                Dictionary<string, Texture2D> levelImages = [];
+                if (imagePaths == null) return levelImages;
+
+                foreach (string imagePath in imagePaths)
                 {
-                    await Task.Run(() => ZipFile.ExtractToDirectory(doomahFile, levelFolderPath));
-                    _ = LoadAssetBundle(levelFolderPath);
-                }
-                catch
-                {
-                    string fileName = Path.GetFileName(doomahFile);
-                    UnityEngine.Debug.LogError($"Failed to extract {fileName}! Please uninstall map or ask creator to update!");
-                    UnityEngine.Debug.LogError($"^^^^^^^^^^^^^ blah blah blah shut up bro your weird (ignore that)");
-                }
-            }
-            EnvyLoaderMenu.UpdateLevelListing();
-            await Task.CompletedTask;
-        }
+                    string fullImagePath = Path.Combine(extractPath, imagePath);
+                    if (!File.Exists(fullImagePath)) continue;
 
-        public static async Task Refresh()
-        {
-            EnvyandSpiteterimal envyScript = GameObject.FindObjectOfType<EnvyandSpiteterimal>();
-            if (envyScript != null)
-            {
-                envyScript.FuckingPleaseWait.SetActive(true);
-            }
-            else
-            {
-                envyLoaderMenuScript = GameObject.FindObjectOfType<EnvyLoaderMenu>();
-                if (envyLoaderMenuScript != null)
-                {
-                    envyLoaderMenuScript.FuckingPleaseWait.SetActive(true);
-                }
-            }
-
-            string unpackedLevelsPath = GetUnpackedLevelsPath();
-            await RecreateUnpackedLevelsFolder(unpackedLevelsPath);
-
-            List<Task> setupTasks = new List<Task>
-           {
-           Setup()
-            };
-
-            await Task.WhenAll(setupTasks);
-
-            if (envyScript != null)
-            {
-                envyScript.FuckingPleaseWait.SetActive(false);
-            }
-            else if (envyLoaderMenuScript != null)
-            {
-                envyLoaderMenuScript.FuckingPleaseWait.SetActive(false);
-            }
-            EnvyLoaderMenu.UpdateLevelListing();
-        }
-
-
-        public static async Task LoadAssetBundle(string folderPath)
-        {
-            string[] bundleFiles = Directory.GetFiles(folderPath, "*.bundle");
-
-            // If you want to implement custom campaigns in the future this part is what you want to modify. - thebluenebula
-
-            foreach (string bundleFile in bundleFiles)
-            {
-                await Task.Run(() =>
-                {
-                    AssetBundle assetBundle = AssetBundle.LoadFromFile(bundleFile);
-                    if (assetBundle != null)
-                    {
-                        loadedAssetBundles.Add(assetBundle);
-                        bundleFolderPaths.Add(Path.GetDirectoryName(bundleFile));
-                    }
-                    else
-                    {
-                        UnityEngine.Debug.LogError("The assetbundle for the level returned null, either it is corrupt or Envy is COMPLETELY BROKEN right now.");
-                    }
-                });
-            }
-        }
-
-        public static string GetCurrentBundleFolderPath()
-        {
-            if (currentAssetBundleIndex >= 0 && currentAssetBundleIndex < bundleFolderPaths.Count)
-            {
-                return bundleFolderPaths[currentAssetBundleIndex];
-            }
-            return null;
-        }
-
-        public static void SelectAssetBundle(int index)
-        {
-            if (index >= 0 && index < loadedAssetBundles.Count)
-            {
-                currentAssetBundleIndex = index;
-            }
-        }
-
-        public static void ExtractSceneName()
-        {
-            if (loadedAssetBundles.Count > 0)
-            {
-                string[] scenePaths = loadedAssetBundles[currentAssetBundleIndex].GetAllScenePaths();
-                if (scenePaths.Length > 0)
-                {
-                    string sceneName = Path.GetFileNameWithoutExtension(scenePaths[0]);
-                    LoadedSceneName = sceneName;
-                }
-            }
-        }
-
-        public static void Loadscene()
-        {
-            if (!string.IsNullOrEmpty(LoadedSceneName))
-            {
-                SceneManager.LoadSceneAsync(LoadedSceneName).completed += OnSceneLoadComplete;
-                SceneHelper.ShowLoadingBlocker();
-            }
-        }
-
-        private static void OnSceneLoadComplete(AsyncOperation asyncOperation)
-        {
-            SceneHelper.DismissBlockers();
-        }
-
-        public static void MoveToNextAssetBundle()
-        {
-            currentAssetBundleIndex = (currentAssetBundleIndex + 1) % loadedAssetBundles.Count;
-        }
-
-        public static void MoveToPreviousAssetBundle()
-        {
-            currentAssetBundleIndex = (currentAssetBundleIndex - 1 + loadedAssetBundles.Count) % loadedAssetBundles.Count;
-        }
-
-        public static void OpenFilesFolder()
-        {
-            switch (Application.platform)
-            {
-                case RuntimePlatform.WindowsEditor:
-                case RuntimePlatform.WindowsPlayer:
-                    Application.OpenURL("file:///" + Plugin.getConfigPath().Replace("\\", "/"));
-                    break;
-                case RuntimePlatform.OSXEditor:
-                case RuntimePlatform.OSXPlayer:
-                    Application.OpenURL("file://" + Plugin.getConfigPath());
-                    break;
-                case RuntimePlatform.LinuxEditor:
-                case RuntimePlatform.LinuxPlayer:
-                    Application.OpenURL("file://" + Plugin.getConfigPath());
-                    break;
-                default:
-                    UnityEngine.Debug.LogWarning("BROTHER WHAT IS YOUR OS?????");
-                    break;
-            }
-        }
-
-        public static void UpdateLevelPicture(Image levelPicture, TextMeshProUGUI frownyFace, bool getFirstBundle = true, string bundlePath = "")
-        {
-            try
-            {
-                string bundleFolderPath = "";
-
-                if (getFirstBundle)
-                {
-                    bundleFolderPath = GetCurrentBundleFolderPath();
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(bundlePath))
-                    {
-                        bundleFolderPath = bundlePath;
-                    }
-                    else
-                    {
-                        UnityEngine.Debug.LogError("Bundle folder path is null or empty.");
-                        frownyFace.gameObject.SetActive(true);
-                        levelPicture.color = new Color(1f, 1f, 1f, 0f);
-                        return; // Early return to prevent further execution
-                    }
+                    byte[] imageBytes = File.ReadAllBytes(fullImagePath);
+                    Texture2D levelImage = new(2, 2);
+                    levelImage.LoadImage(imageBytes);
+                    levelImages[imagePath] = levelImage;
                 }
 
-                if (!string.IsNullOrEmpty(bundleFolderPath))
+                return levelImages;
+            }
+
+            // https://stackoverflow.com/a/11124118
+            string GetFileSize()
+            {
+                long value = new FileInfo(bundleFile).Length;
+                string suffix;
+                double readable;
+                switch (Math.Abs(value))
                 {
-                    string[] imageFiles = Directory.GetFiles(bundleFolderPath, "*.png");
-                    if (imageFiles.Length > 0)
-                    {
-                        string imagePath = imageFiles[0];
-                        Texture2D tex = LoadTextureFromFile(imagePath);
-                        if (tex != null)
-                        {
-                            tex.filterMode = FilterMode.Point;
-                            levelPicture.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
-                            frownyFace.gameObject.SetActive(false);
-                            levelPicture.color = Color.white;
-                        }
-                    }
-                    else
-                    {
-                        frownyFace.gameObject.SetActive(true);
-                        levelPicture.color = new Color(1f, 1f, 1f, 0f);
-                    }
+                    case >= 0x1000000000000000:
+                        suffix = "EiB";
+                        readable = value >> 50;
+                        break;
+                    case >= 0x4000000000000:
+                        suffix = "PiB";
+                        readable = value >> 40;
+                        break;
+                    case >= 0x10000000000:
+                        suffix = "TiB";
+                        readable = value >> 30;
+                        break;
+                    case >= 0x40000000:
+                        suffix = "GiB";
+                        readable = value >> 20;
+                        break;
+                    case >= 0x100000:
+                        suffix = "MiB";
+                        readable = value >> 10;
+                        break;
+                    case >= 0x400:
+                        suffix = "KiB";
+                        readable = value;
+                        break;
+                    default:
+                        return value.ToString("0 B");
                 }
-                else
-                {
-                    UnityEngine.Debug.LogError("Bundle folder path is null or empty.");
-                    frownyFace.gameObject.SetActive(true);
-                    levelPicture.color = new Color(1f, 1f, 1f, 0f);
-                }
-            }
-            catch (Exception ex)
-            {
-                UnityEngine.Debug.LogError($"An error occurred while updating level picture: {ex.Message}");
-                frownyFace.gameObject.SetActive(true);
-                levelPicture.color = new Color(1f, 1f, 1f, 0f);
+
+                return (readable / 1024).ToString("0.## ") + suffix;
             }
         }
+    }
 
-        private static Texture2D LoadTextureFromFile(string path)
-        {
-            byte[] fileData = File.ReadAllBytes(path);
-            Texture2D texture = new Texture2D(2, 2);
-            texture.LoadImage(fileData);
-            return texture;
-        }
+    [Serializable]
+    public class LevelInfo
+    {
+        public string Author;
+        public string LevelName;
+        public bool IsCampaign;
+        public List<string> Scenes = [];
+        public List<string> LevelNames = [];
+        public List<string> LevelImages = [];
 
-        public static string GetAssetBundleSize(int index)
-        {
-            if (index >= 0 && index < loadedAssetBundles.Count)
-            {
-                AssetBundle assetBundle = loadedAssetBundles[index];
-                string bundlePath = bundleFolderPaths[index];
-                long fileSize = CalculateFileSize(bundlePath);
-                string fileSizeFormatted = FormatFileSize(fileSize);
-                return fileSizeFormatted;
-            }
-            else
-            {
-                return "Index out of range";
-            }
-        }
-
-        private static long CalculateFileSize(string bundlePath)
-        {
-            long totalSize = 0;
-            string[] files = Directory.GetFiles(bundlePath, "*", SearchOption.AllDirectories);
-            foreach (string file in files)
-            {
-                totalSize += new FileInfo(file).Length;
-            }
-            return totalSize;
-        }
-
-        private static string FormatFileSize(long bytes)
-        {
-            string[] suffixes = { "B", "KB", "MB", "GB", "TB", "PB" };
-            int suffixIndex = 0;
-            double size = bytes;
-
-            while (size >= 1024 && suffixIndex < suffixes.Length - 1)
-            {
-                size /= 1024;
-                suffixIndex++;
-            }
-
-            return $"{Math.Round(size, 2)} {suffixes[suffixIndex]}";
-        }
+        public LevelInfo(string path) => JsonUtility.FromJson<LevelInfo>(File.ReadAllText(path));
     }
 }
