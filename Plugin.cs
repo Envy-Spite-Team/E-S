@@ -19,15 +19,14 @@ namespace DoomahLevelLoader
     public class Plugin : BaseUnityPlugin
     {
         private AssetBundle terminal;
-        private Shader loadedShader;
 		public static bool IsCustomLevel = false;
         private static Plugin _instance;
 
         public static Plugin Instance => _instance;
 
-        public static async Task foldershitAsync()
+        public static void foldershitAsync()
         {
-            await Loaderscene.RecreateUnpackedLevelsFolder(Loaderscene.GetUnpackedLevelsPath());
+            Loaderscene.RefreshLevels();
         }
 
         public static string getConfigPath()
@@ -88,68 +87,61 @@ namespace DoomahLevelLoader
 			
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-			_ = Loaderscene.Setup();
-			Loaderscene.ExtractSceneName();
+			Loaderscene.LoadLevels();
         }
 
-        private async void OnDestroy()
+        private void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
-			await foldershitAsync();
+			foldershitAsync();
         }
+		
+		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+		{
+			bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
+			bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
 
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            if (SceneHelper.CurrentScene != "Bootstrap")
-            {
-                if (SceneHelper.CurrentScene != "Intro")
-                {
-                    ShaderManager.CreateShaderDictionary();
-                    _ = foldershitAsync();
-                    InstantiateEnvyScreen(false);
-                }
-            }
-            if (ShaderManager.shaderDictionary.Count <= 0)
-            {
-                StartCoroutine(ShaderManager.LoadShadersAsync());
-            }
-            if (SceneHelper.CurrentScene == "Main Menu")
-            {
-                ShaderManager.CreateShaderDictionary();
-                _ = foldershitAsync();
-                InstantiateEnvyScreen(true);
-            }
-            if (scene.name == Loaderscene.LoadedSceneName)
-            {
-                SceneHelper.CurrentScene = SceneManager.GetActiveScene().name;
-                Camera mainCamera = Camera.main;
-                IsCustomLevel = true;
-                if (mainCamera != null)
-                {
-                    mainCamera.clearFlags = CameraClearFlags.Skybox;
-                }
-                else
-                {
-                    Debug.LogWarning("Main camera not found in the scene.");
-                }
-                StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
-            }
-            else
-            {
-                IsCustomLevel = false;
-            }
-        }
+			if (isNotBootstrapOrIntro)
+			{
+				ShaderManager.CreateShaderDictionary();
+				foldershitAsync();
+				InstantiateEnvyScreen(isMainMenu);
+			}
+
+			if (ShaderManager.shaderDictionary.Count <= 0)
+			{
+				StartCoroutine(ShaderManager.LoadShadersAsync());
+			}
+
+			if (Loaderscene.IsSceneInAnyAssetBundle(scene.name))
+			{
+				SceneHelper.CurrentScene = SceneManager.GetActiveScene().name;
+				Camera mainCamera = Camera.main;
+				IsCustomLevel = true;
+				if (mainCamera != null)
+				{
+					mainCamera.clearFlags = CameraClearFlags.Skybox;
+				}
+				else
+				{
+					Debug.LogWarning("Main camera not found in the scene.");
+				}
+				StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
+			}
+			else
+			{
+				IsCustomLevel = false;
+				Loaderscene.currentLevelName = null;
+			}
+		}
 
         private void OnSceneUnloaded(Scene scene)
         {
-            if (SceneHelper.CurrentScene == "uk_construct")
-            {
-            }
 			if (SceneHelper.CurrentScene == "Main Menu")
 			{
 				InstantiateEnvyScreen(true);
-                _ = foldershitAsync();
+                foldershitAsync();
                 ShaderManager.CreateShaderDictionary();
             }
         }
@@ -158,7 +150,7 @@ namespace DoomahLevelLoader
 		{
             GameObject envyScreenPrefab = terminal.LoadAsset<GameObject>("EnvyScreen.prefab");
             // Fun Fact: my dumbass forgot to put envyscreen in the assetbundle and i was stuck debugging it for 2 hours RAHHHHHHHHHHHHH --thebluenebula
-
+			// smart ass --doomah
             if (envyScreenPrefab == null)
 			{
 				Debug.LogError("EnvyScreen prefab not found in the terminal bundle.");
@@ -181,49 +173,6 @@ namespace DoomahLevelLoader
             instantiatedObject.transform.SetParent(canvasObject.transform, false);
 			instantiatedObject.transform.localPosition = Vector3.zero;
 			instantiatedObject.transform.localScale = new Vector3(1f, 1f, 1f);
-		}
-
-		private void InstantiateTerminal()
-		{
-			var shaderHandle = Addressables.LoadAssetAsync<Shader>("Assets/Shaders/Main/ULTRAKILL-vertexlit.shader");
-			shaderHandle.WaitForCompletion();
-
-			if (shaderHandle.Status != AsyncOperationStatus.Succeeded)
-				return;
-
-			loadedShader = shaderHandle.Result;
-
-			GameObject instantiatedterminal = terminal.LoadAsset<GameObject>("assets/levelloadterminal.prefab");
-			if (instantiatedterminal == null)
-				return;
-
-			GameObject instantiatedObject = Instantiate(instantiatedterminal, new Vector3(-36f, -10f, 335f), Quaternion.Euler(0f, 0f, 180f));
-
-			Transform cubeTransform = instantiatedObject.transform.Find("Cube");
-			if (cubeTransform == null)
-				return;
-
-			GameObject[] cubeArray = new GameObject[1];
-			cubeArray[0] = cubeTransform.gameObject; 
-
-			Renderer renderer = cubeTransform.GetComponent<Renderer>();
-			if (renderer == null)
-				return;
-
-			Material[] materials = renderer.materials;
-			foreach (Material material in materials)
-			{
-				material.shader = loadedShader;
-			}
-			renderer.materials = materials;
-
-			var outdoorsChecker = instantiatedObject.AddComponent<OutdoorsChecker>();
-
-			if (outdoorsChecker != null)
-			{
-				outdoorsChecker.targets = cubeArray;
-				outdoorsChecker.nonSolid = false;
-			}
 		}
     }
 }

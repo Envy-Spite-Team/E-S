@@ -13,204 +13,143 @@ using System.Threading;
 
 namespace DoomahLevelLoader
 {
-    public class EnvyLoaderMenu : MonoBehaviour
-    {
-        private static EnvyLoaderMenu instance;
+public class EnvyLoaderMenu : MonoBehaviour
+{
+	private static EnvyLoaderMenu instance;
 
-        public GameObject ContentStuff;
-        public GameObject LevelsMenu;
-        public GameObject LevelsButton;
-        public GameObject FuckingPleaseWait;
-        public TextMeshProUGUI MOTDMessage;
-        private bool AlreadyStarted = false;
+	public GameObject ContentStuff;
+	public GameObject LevelsMenu;
+	public GameObject LevelsButton;
+	public GameObject FuckingPleaseWait;
+	public TextMeshProUGUI MOTDMessage;
+	private bool AlreadyStarted = false;
 
-        public static EnvyLoaderMenu Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = FindObjectOfType<EnvyLoaderMenu>();
-                    if (instance == null)
-                    {
-                        Debug.LogError("EnvyScreen prefab not found in the terminal bundle. This error may look scary but it's probably nothing to worry about.");
-                    }
-                }
-                if (instance.AlreadyStarted == false)
-                {
-                    instance.AlreadyStarted = true;
-                    instance.Start();
-                }
-                return instance;
-            }
-        }
+	public static EnvyLoaderMenu Instance
+	{
+		get
+		{
+			if (instance == null)
+			{
+				instance = FindObjectOfType<EnvyLoaderMenu>();
+				if (instance == null)
+				{
+					Debug.LogError("EnvyScreen prefab not found in the terminal bundle. This error may look scary but it's probably nothing to worry about.");
+				}
+			}
+			if (instance.AlreadyStarted == false)
+			{
+				instance.AlreadyStarted = true;
+				instance.Start();
+			}
+			return instance;
+		}
+	}
 
-        public void Start()
-        {
-            EnvyLoaderMenu.CreateLevels();
+	public void Start()
+	{
+		EnvyLoaderMenu.CreateLevels();
+	}
 
-            Debug.Log("WAS THAT THE ERROR OF 87?");
-            UnityWebRequest www = UnityWebRequest.Get("https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/main/motd.txt");
-            Debug.Log("Test 0");
-            yield return www.SendWebRequest();
+	public static void CreateLevels()
+	{
+		foreach (AssetBundleInfo bundleInfo in Loaderscene.AssetBundles)
+		{
+			GameObject levelButtonObject = Instantiate(Instance.LevelsButton, Instance.ContentStuff.transform);
+			LevelButtonScript buttonScript = levelButtonObject.GetComponent<LevelButtonScript>();
 
-            Debug.Log("Test 1");
-            if (www.isNetworkError || www.isHttpError)
-            {
-                Debug.Log(www.error);
-                Debug.Log("Test 2");
-            }
-            else
-            {
-                // Show results as text
-                Debug.Log(www.downloadHandler.text);
+			Loaderscene.SetLevelButtonScriptProperties(buttonScript, bundleInfo);
 
-                // Or retrieve results as binary data
-                byte[] results = www.downloadHandler.data;
+			if (bundleInfo.IsCampaign)
+			{
+				buttonScript.SceneToLoad = "";
+			}
+			
+			if (!string.IsNullOrEmpty(buttonScript.SceneToLoad))
+			{
+				buttonScript.LevelButtonReal.onClick.AddListener(() => Loaderscene.LoadScene(buttonScript));
+			}
+		}
+	}
 
-                Debug.Log("Shit is about to get real.");
-                if (www.downloadHandler.text != null)
-                {
-                    Debug.Log(www.downloadHandler.text);
-                    Instance.MOTDMessage.text = www.downloadHandler.text;
-                }
-                else
-                {
-                    Debug.LogError("HTTP request failed, check if you even have WIFI.");
-                }
-            }
-        }
+	public static void ClearContentStuffChildren()
+	{
+		if (Instance == null) return;
 
-        public static void CreateLevels()
-        {
-            if (Instance == null) return;
+		foreach (Transform child in Instance.ContentStuff.transform)
+		{
+			Destroy(child.gameObject);
+		}
+	}
 
-            for (int i = 0; i < Loaderscene.loadedAssetBundles.Count; i++)
-            {
-                string bundlePath = Loaderscene.bundleFolderPaths[i];
-                string infoFilePath = Path.Combine(bundlePath, "info.txt");
+	public static IEnumerator UpdateLevelListingCoroutine()
+	{
+		Instance.FuckingPleaseWait.SetActive(true);
 
-                if (!Directory.Exists(bundlePath))
-                {
-                    Debug.LogWarning($"Skipping level at '{bundlePath}' because the directory does not exist.");
-                    continue;
-                }
+		ClearContentStuffChildren();
+		CreateLevels();
 
-                GameObject buttonGO = Instantiate(Instance.LevelsButton, Instance.ContentStuff.transform);
-                Button button = buttonGO.GetComponent<Button>();
-                int index = i;
-                button.onClick.AddListener(() =>
-                {
-                    Loaderscene.currentAssetBundleIndex = index;
-                    Loaderscene.ExtractSceneName();
-                    Loaderscene.Loadscene();
-                });
+		yield return null;
 
-                LevelButtonScript levelButtonScript = buttonGO.GetComponent<LevelButtonScript>();
+		Instance.FuckingPleaseWait.SetActive(false);
+	}
 
-                Loaderscene.UpdateLevelPicture(levelButtonScript.LevelImageButtonThing, levelButtonScript.NoLevel, false, bundlePath);
-                string Size = Loaderscene.GetAssetBundleSize(index);
-                levelButtonScript.FileSize.text = Size;
-                try
-                {
-                    string[] lines = File.ReadAllLines(infoFilePath);
-                    if (lines.Length >= 2)
-                    {
-                        levelButtonScript.Author.text = lines[0] ?? "Failed to load Author name!";
-                        levelButtonScript.LevelName.text = lines[1] ?? "Failed to load Level name!";
-                    }
-                    else
-                    {
-                        levelButtonScript.Author.text = "Failed to load Author name!";
-                        levelButtonScript.LevelName.text = "Failed to load Level name!";
-                    }
-                }
-                catch
-                {
-                    Debug.LogError($"Failed to read info.txt in bundle folder '{bundlePath}'");
-                }
-            }
-        }
+	public static void UpdateLevelListing()
+	{
+		if (Instance != null)
+		{
+			Instance.StartCoroutine(UpdateLevelListingCoroutine());
+		}
+	}
+}
 
-        public static void ClearContentStuffChildren()
-        {
-            if (Instance == null) return;
+public class DropdownHandler : MonoBehaviour
+{
+	public TMP_Dropdown dropdown;
 
-            foreach (Transform child in Instance.ContentStuff.transform)
-            {
-                Destroy(child.gameObject);
-            }
-        }
+	private const string selectedDifficultyKey = "difficulty";
+	private string settingsFilePath;
 
-        public static IEnumerator UpdateLevelListingCoroutine()
-        {
-            Instance.FuckingPleaseWait.SetActive(true);
+	private void Awake()
+	{
+		settingsFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "settings.json");
+	}
 
-            ClearContentStuffChildren();
-            CreateLevels();
+	private void OnEnable()
+	{
+		int savedDifficulty = LoadDifficulty();
+		dropdown.value = savedDifficulty;
+		dropdown.onValueChanged.AddListener(OnDropdownValueChanged);
+	}
 
-            yield return null;
+	private int LoadDifficulty()
+	{
+		if (File.Exists(settingsFilePath))
+		{
+			string json = File.ReadAllText(settingsFilePath);
+			Dictionary<string, int> settings = JsonConvert.DeserializeObject<Dictionary<string, int>>(json);
 
-            Instance.FuckingPleaseWait.SetActive(false);
-        }
+			if (settings != null && settings.TryGetValue(selectedDifficultyKey, out int difficulty))
+			{
+				return difficulty;
+			}
+		}
+		return 2;
+	}
 
-        public static void UpdateLevelListing()
-        {
-            if (Instance != null)
-            {
-                Instance.StartCoroutine(UpdateLevelListingCoroutine());
-            }
-        }
-    }
+	private void SaveDifficulty(int difficulty)
+	{
+		Dictionary<string, int> settings = new Dictionary<string, int>
+		{
+			{ selectedDifficultyKey, difficulty }
+		};
 
-    public class DropdownHandler : MonoBehaviour
-    {
-        public TMP_Dropdown dropdown;
+		string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
+		File.WriteAllText(settingsFilePath, json);
+	}
 
-        private const string selectedDifficultyKey = "difficulty";
-        private string settingsFilePath;
-
-        private void Awake()
-        {
-            settingsFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "settings.json");
-        }
-
-        private void OnEnable()
-        {
-            int savedDifficulty = LoadDifficulty();
-            dropdown.value = savedDifficulty;
-            dropdown.onValueChanged.AddListener(OnDropdownValueChanged);
-        }
-
-        private int LoadDifficulty()
-        {
-            if (File.Exists(settingsFilePath))
-            {
-                string json = File.ReadAllText(settingsFilePath);
-                Dictionary<string, int> settings = JsonConvert.DeserializeObject<Dictionary<string, int>>(json);
-
-                if (settings != null && settings.TryGetValue(selectedDifficultyKey, out int difficulty))
-                {
-                    return difficulty;
-                }
-            }
-            return 2;
-        }
-
-        private void SaveDifficulty(int difficulty)
-        {
-            Dictionary<string, int> settings = new Dictionary<string, int>
-            {
-                { selectedDifficultyKey, difficulty }
-            };
-
-            string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-            File.WriteAllText(settingsFilePath, json);
-        }
-
-        public void OnDropdownValueChanged(int index)
-        {
-            SaveDifficulty(index);
-        }
-    }
+	public void OnDropdownValueChanged(int index)
+	{
+		SaveDifficulty(index);
+	}
+}
 }

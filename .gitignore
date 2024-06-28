@@ -5,3 +5,4 @@ bin/Debug/netstandard2.0
 meshwhatever.sln
 .vs
 Properties
+compile.bat

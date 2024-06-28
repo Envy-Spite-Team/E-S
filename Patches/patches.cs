@@ -17,28 +17,10 @@ namespace DoomahLevelLoader
         {
 			if (Plugin.IsCustomLevel)
 			{
-				UnityEngine.SceneManagement.SceneManager.LoadScene(Loaderscene.LoadedSceneName);
+				SceneManager.LoadScene(Loaderscene.currentLevelName);
 				return false;
 			}
 			return true;
-		}
-    }
-
-	[HarmonyPatch(typeof(FinalRank), "LevelChange")]
-    public static class FinalRank_LevelChangePatch
-    {
-        [HarmonyPrefix]
-        public static bool Prefix(FinalRank __instance)
-        {
-			if (!Plugin.IsCustomLevel)
-				return true;
-			
-			if (__instance.targetLevelName == null)
-				return true;
-			
-			Loaderscene.LoadedSceneName = __instance.targetLevelName;
-			Loaderscene.Loadscene();
-			return false;
 		}
     }
 
@@ -51,39 +33,10 @@ namespace DoomahLevelLoader
 			if (!Plugin.IsCustomLevel)
 				return;
 			
-			string bundleFolderPath = Loaderscene.GetCurrentBundleFolderPath();
-
-			if (string.IsNullOrEmpty(bundleFolderPath))
-			{
+			if (string.IsNullOrEmpty(Loaderscene.currentLevelName))
 				return;
-			}
 
-			string infoFilePath = Path.Combine(bundleFolderPath, "info.txt");
-
-			if (!File.Exists(infoFilePath))
-			{
-				__instance.txt2.text = "Failed to load Level name!";
-				return;
-			}
-
-			try
-			{
-				string[] lines = File.ReadAllLines(infoFilePath);
-
-				if (lines.Length >= 2)
-				{
-					string levelName = lines[1];
-					__instance.txt2.text = levelName;
-				}
-				else
-				{
-					__instance.txt2.text = "Failed to load Level name!";
-				}
-			}
-			catch
-			{
-				__instance.txt2.text = "Failed to load Level name!";
-			}
+			__instance.txt2.text = Loaderscene.currentLevelName;
 		}
 	}
 }

@@ -39,7 +39,7 @@ namespace DoomahLevelLoader
 
         private void ToggleMenu()
         {
-            if (AssignToFuckingLevels.active == false)
+            if (AssignToFuckingLevels.activeSelf == false)
             {
                 AssignToFuckingLevels.SetActive(true);
                 AssignToMenuOpenButton.gameObject.SetActive(false);
