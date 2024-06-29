@@ -6,8 +6,6 @@ using System.IO;
 using TMPro;
 using Newtonsoft.Json;
 using System.Reflection;
-using System.Net.Http;
-using System.Threading.Tasks;
 using UnityEngine.Networking;
 using System.Threading;
 
@@ -22,7 +20,8 @@ public class EnvyLoaderMenu : MonoBehaviour
 	public GameObject LevelsButton;
 	public GameObject FuckingPleaseWait;
 	public TextMeshProUGUI MOTDMessage;
-	private bool AlreadyStarted = false;
+
+	private const string motdUrl = "https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/main/motd.txt";
 
 	public static EnvyLoaderMenu Instance
 	{
@@ -37,11 +36,6 @@ public class EnvyLoaderMenu : MonoBehaviour
 					return null;
 				}
 			}
-			if (!instance.AlreadyStarted)
-			{
-				instance.AlreadyStarted = true;
-				instance.Start();
-			}
 			return instance;
 		}
 	}
@@ -49,6 +43,31 @@ public class EnvyLoaderMenu : MonoBehaviour
 	public void Start()
 	{
 		EnvyLoaderMenu.CreateLevels();
+		StartCoroutine(LoadMOTD());
+	}
+	
+	private IEnumerator LoadMOTD()
+	{
+		using (UnityWebRequest webRequest = UnityWebRequest.Get(motdUrl))
+		{
+			yield return webRequest.SendWebRequest();
+
+			if (webRequest.isNetworkError || webRequest.isHttpError)
+			{
+				Debug.LogError("Failed to fetch MOTD: " + webRequest.error);
+			}
+			else
+			{
+				string motdText = webRequest.downloadHandler.text;
+				if (!string.IsNullOrEmpty(motdText))
+				{
+					string[] lines = motdText.Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
+					string firstLine = lines.Length > 0 ? lines[0] : "No MOTD available";
+
+					MOTDMessage.text = firstLine;
+				}
+			}
+		}
 	}
 
 	public static void CreateLevels()
