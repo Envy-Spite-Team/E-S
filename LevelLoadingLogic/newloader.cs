@@ -78,7 +78,7 @@ namespace DoomahLevelLoader
             SceneManager.LoadSceneAsync(buttonScript.SceneToLoad).completed += _ => SceneHelper.DismissBlockers();
         }
 
-        public static void OpenFilesFolder() => Process.Start(Plugin.getConfigPath().Replace("\\", "/"));
+        public static void OpenFilesFolder() => Application.OpenURL("file://" + Plugin.getConfigPath().Replace("\\", "/"));
 
 		public static void SetLevelButtonScriptProperties(LevelButtonScript buttonScript, AssetBundleInfo bundleInfo)
 		{
