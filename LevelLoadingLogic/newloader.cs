@@ -30,6 +30,7 @@ namespace DoomahLevelLoader
         }
 
         public static string currentLevelName = null;
+        public static string currentLevelpath = null;
         public static List<AssetBundleInfo> AssetBundles = [];
 
         public static void LoadLevels() => Directory.GetFiles(LevelsPath, "*.doomah").ToList().ForEach(UnzipAndLoadBundles);
@@ -72,11 +73,17 @@ namespace DoomahLevelLoader
         {
             if (string.IsNullOrEmpty(buttonScript?.SceneToLoad)) return;
             SceneHelper.Instance.LoadSceneAsync(buttonScript.SceneToLoad, false);
+            currentLevelpath = buttonScript.SceneToLoad;
             currentLevelName = buttonScript.LevelName.text;
 
             SceneHelper.ShowLoadingBlocker();
-            SceneManager.LoadSceneAsync(buttonScript.SceneToLoad).completed += _ => SceneHelper.DismissBlockers();
-        }
+			
+			SceneManager.LoadSceneAsync(buttonScript.SceneToLoad).completed += operation =>
+			{
+				SceneHelper.DismissBlockers();
+				Plugin.Fixorsmth();
+			};
+		}
 
         public static void OpenFilesFolder() => Application.OpenURL("file://" + Plugin.getConfigPath().Replace("\\", "/"));
 

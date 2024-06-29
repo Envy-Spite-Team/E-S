@@ -109,24 +109,22 @@ namespace DoomahLevelLoader
 
 			if (Loaderscene.IsSceneInAnyAssetBundle(scene.name))
 			{
-				SceneHelper.CurrentScene = SceneManager.GetActiveScene().name;
-				Camera mainCamera = Camera.main;
-				IsCustomLevel = true;
-				if (mainCamera != null)
-				{
-					mainCamera.clearFlags = CameraClearFlags.Skybox;
-				}
-				else
-				{
-					Debug.LogWarning("Main camera not found in the scene.");
-				}
-				StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
+				Fixorsmth();
 			}
 			else
 			{
 				IsCustomLevel = false;
 				Loaderscene.currentLevelName = null;
 			}
+		}
+		
+		public static void Fixorsmth()
+		{
+			SceneHelper.CurrentScene = SceneManager.GetActiveScene().name;
+			Camera mainCamera = Camera.main;
+			IsCustomLevel = true;
+			mainCamera.clearFlags = CameraClearFlags.Skybox;
+			_instance.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
 		}
 
         private void OnSceneUnloaded(Scene scene)

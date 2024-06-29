@@ -17,7 +17,7 @@ namespace DoomahLevelLoader
         {
 			if (Plugin.IsCustomLevel)
 			{
-				SceneManager.LoadScene(Loaderscene.currentLevelName);
+				SceneManager.LoadScene(Loaderscene.currentLevelpath);
 				return false;
 			}
 			return true;
