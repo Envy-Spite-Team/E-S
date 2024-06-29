@@ -80,24 +80,27 @@ namespace DoomahLevelLoader
 
         public static void OpenFilesFolder() => Process.Start(Plugin.getConfigPath().Replace("\\", "/"));
 
-        public static void SetLevelButtonScriptProperties(LevelButtonScript buttonScript, AssetBundleInfo bundleInfo)
-        {
-            buttonScript.BundleName = bundleInfo.Bundle;
-            buttonScript.SceneToLoad = bundleInfo.ScenePaths.FirstOrDefault();
-            buttonScript.OpenCamp = bundleInfo.IsCampaign;
-            buttonScript.FileSize.text = bundleInfo.FileSize;
+		public static void SetLevelButtonScriptProperties(LevelButtonScript buttonScript, AssetBundleInfo bundleInfo)
+		{
+			buttonScript.BundleName = bundleInfo.Bundle;
+			buttonScript.SceneToLoad = bundleInfo.ScenePaths.FirstOrDefault();
+			buttonScript.OpenCamp = bundleInfo.IsCampaign;
+			buttonScript.FileSize.text = bundleInfo.FileSize;
 
-            buttonScript.Author.text = bundleInfo.Author ?? "Unknown";
-            buttonScript.LevelName.text = bundleInfo.LevelNames.Any() ? bundleInfo.LevelNames.First() : "Unnamed";
+			buttonScript.Author.text = bundleInfo.Author ?? "Unknown";
+			buttonScript.LevelName.text = bundleInfo.LevelNames.Any() ? bundleInfo.LevelNames.First() : "Unnamed";
 
-            if (bundleInfo.LevelImages.Values.FirstOrDefault() is Texture2D firstImage)
-            {
-                buttonScript.LevelImageButtonThing.sprite = Sprite.Create(firstImage, new Rect(0, 0, firstImage.width, firstImage.height), Vector2.zero);
-            }
+			if (bundleInfo.LevelImages.Values.FirstOrDefault() is Texture2D firstImage)
+			{
+				buttonScript.LevelImageButtonThing.sprite = Sprite.Create(firstImage, new Rect(0, 0, firstImage.width, firstImage.height), Vector2.zero);
+				// the line bellow is so fucking stupid, images werent appearing for no appearnt reason 
+				// only to find out with unity explorer that the images are black. --doomah
+				buttonScript.LevelImageButtonThing.color = Color.white;
+			}
 
-            buttonScript.NoLevel.gameObject.SetActive(!bundleInfo.LevelNames.Any());
-            buttonScript.LevelImageButtonThing.gameObject.SetActive(bundleInfo.LevelNames.Any());
-        }
+			buttonScript.NoLevel.gameObject.SetActive(!bundleInfo.LevelNames.Any());
+			buttonScript.LevelImageButtonThing.gameObject.SetActive(bundleInfo.LevelNames.Any());
+		}
 
         public static bool IsSceneInAnyAssetBundle(string sceneName) => AssetBundles.Any(bundle => bundle.ScenePaths.Contains(sceneName));
     }
