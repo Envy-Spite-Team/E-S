@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <None Remove="lib\**" />
+    <Compile Remove="LevelLoadingLogic\GuiStuff\EnvyLoaderMenu nebula version.cs" />
 		<None Remove="LICENSE" />
 		<None Remove="README.md" />
 	</ItemGroup>
