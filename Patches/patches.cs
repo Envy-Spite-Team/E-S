@@ -24,7 +24,22 @@ namespace DoomahLevelLoader
 		}
     }
 
-	[HarmonyPatch(typeof(LevelNameFinder))]
+    [HarmonyPatch(typeof(StatsManager))]
+	[HarmonyPatch("Start")]
+    public static class StatsManager_Start_Patch
+    {
+        [HarmonyPostfix]
+        static void Postfix(StatsManager __instance)
+        {
+            if (Plugin.IsCustomLevel)
+            {
+				__instance.levelNumber = -1;
+				Debug.Log(__instance.levelNumber);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(LevelNameFinder))]
 	[HarmonyPatch("OnEnable")]
 	public static class LevelNameFinder_Patch
 	{

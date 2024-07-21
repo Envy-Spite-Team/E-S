@@ -21,7 +21,7 @@ public class EnvyLoaderMenu : MonoBehaviour
 	public GameObject FuckingPleaseWait;
 	public TextMeshProUGUI MOTDMessage;
 
-	private const string motdUrl = "https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/main/motd.txt";
+	private const string motdUrl = "https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/main/MOTD.txt";
 
 	public static EnvyLoaderMenu Instance
 	{
