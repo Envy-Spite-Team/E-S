@@ -54,4 +54,43 @@ namespace DoomahLevelLoader
 			__instance.txt2.text = Loaderscene.currentLevelName;
 		}
 	}
+
+    [HarmonyPatch(typeof(FinalRank))]
+    [HarmonyPatch("LevelChange")]
+    public static class FinalRank_Patch
+    {
+        static void Prefix(FinalRank __instance)
+        {
+            if (Plugin.IsCustomLevel && string.IsNullOrEmpty(__instance.targetLevelName))
+                __instance.targetLevelName = "Main Menu";
+        }
+    }
+
+    [HarmonyPatch(typeof(AdvancedOptions))]
+    [HarmonyPatch("ResetCyberGrind")]
+    public static class AdvOpt_Patch
+    {
+        static bool Prefix(AdvancedOptions __instance)
+        {
+            //oh hell naw
+            return !Plugin.IsCustomLevel;
+        }
+    }
+
+    [HarmonyPatch(typeof(MusicManager))]
+    [HarmonyPatch("OnEnable")]
+    public static class MusicMan_Patch
+    {
+        static void Postfix(MusicManager __instance)
+        {
+            try // just incase someones level is setup weird
+            {
+                __instance.battleTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
+                __instance.bossTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
+                __instance.cleanTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
+                __instance.targetTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
+            }
+            catch { }
+        }
+    }
 }
