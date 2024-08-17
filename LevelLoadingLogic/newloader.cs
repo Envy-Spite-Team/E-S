@@ -6,6 +6,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -21,75 +23,100 @@ namespace DoomahLevelLoader
         public static List<AssetBundleInfo> AssetBundles = new List<AssetBundleInfo>();
 
         static UnityAction onLevelsLoaded;
-        public static void LoadLevels()
+        public static async Task LoadLevels()
         {
-            SceneHelper.ShowLoadingBlocker();
             onLevelsLoaded = null;
             string[] files = Directory.GetFiles(LevelsPath, "*.doomah");
-            MonoBehaviour hijack = UnityEngine.GameObject.FindObjectOfType<MonoBehaviour>();
 
+            GameObject myBlocker = GameObject.Instantiate(MonoSingleton<SceneHelper>.Instance.loadingBlocker, MonoSingleton<SceneHelper>.Instance.loadingBlocker.transform.parent);
+            TextMeshProUGUI text = myBlocker.GetComponentInChildren<TextMeshProUGUI>();
+            text.text = "Loading levels...\n0/" + files.Length.ToString();
+            myBlocker.SetActive(true);
+
+            loadProgress = 0;
+            loadProgressMax = files.Length;
             int fileIndex = 1;
             foreach (string file in files)
             {
-                hijack.StartCoroutine(LoadBundlesFromDoomah(file, fileIndex / 2, fileIndex == files.Length - 1));
+                try
+                {
+                    LoadBundlesFromDoomah(file, fileIndex / 2, text);
+                    UnityEngine.Debug.Log(file + " loaded!");
+                    await Task.Delay(16);
+                }
+                catch (Exception e) { UnityEngine.Debug.Log(file + " failed to load!"); }
+
                 fileIndex++;
             }
+
+            GameObject.Destroy(myBlocker);
+            onLevelsLoaded.Invoke();
         }
-        static IEnumerator LoadBundlesFromDoomah(string doomahFile, int index, bool isLast)
+        static short loadProgress = 0;
+        static int loadProgressMax = 0;
+        static async Task LoadBundlesFromDoomah(string doomahFile, int index, TextMeshProUGUI blocker)
         {
-            yield return new WaitForFixedUpdate(); //big wait to let ShowLoadingBlocker render
+            await Task.Delay(16); //big wait to let ShowLoadingBlocker render
 
-            //offset each call by x amount of frames to avoid all IEnumerators being ran the same frame
-            for (int i = 0; i < index; i++) yield return new WaitForEndOfFrame();
-
-            try
+            using (ZipArchive archive = ZipFile.OpenRead(doomahFile))
             {
-                using (ZipArchive archive = ZipFile.OpenRead(doomahFile))
+                foreach (var entry in archive.Entries)
                 {
-                    foreach (var entry in archive.Entries)
+                    if (entry.FullName.EndsWith(".bundle", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (entry.FullName.EndsWith(".bundle", StringComparison.OrdinalIgnoreCase))
+
+                        Stream s = entry.Open();
+                        byte[] bundleBytes;
+                        using (var memstream = new MemoryStream())
                         {
-                            using (StreamReader reader = new StreamReader(entry.Open()))
-                            {
-                                byte[] bundleBytes = ReadFully(reader.BaseStream);
-                                AssetBundles.Add(new AssetBundleInfo(bundleBytes, archive));
-                            }
+                            new StreamReader(s).BaseStream.CopyTo(memstream);
+                            bundleBytes = memstream.ToArray();
                         }
+
+                        AssetBundles.Add(new AssetBundleInfo(bundleBytes, archive));
+
+                        await Task.Delay(1);
+
+                        loadProgress++;
+                        blocker.text = "Loading levels...\n" + loadProgress.ToString() + "/" + loadProgressMax.ToString();
                     }
                 }
             }
-            catch { UnityEngine.Debug.LogWarning(doomahFile + " failed to load!"); }
-
-            if (isLast) { onLevelsLoaded.Invoke(); SceneHelper.DismissBlockers(); }
         }
 
         public static void RefreshLevels()
         {
-            AssetBundles.ForEach(bundle => bundle.Bundle.Unload(true));
-            AssetBundles.Clear();
+            AssetBundles = new List<AssetBundleInfo>();
             LoadLevels();
             onLevelsLoaded += () => EnvyLoaderMenu.UpdateLevelListing();
         }
 
         public static byte[] ReadFully(Stream input)
         {
-            using (MemoryStream ms = new MemoryStream())
+            using (BinaryReader reader = new BinaryReader(input))
             {
-                input.CopyTo(ms);
-                return ms.ToArray();
+                byte[] allBytes = reader.ReadBytes((int)input.Length);
+                return allBytes;
             }
         }
 
+        static AssetBundle lastUsedBundle;
         public static void LoadScene(LevelButtonScript buttonScript)
         {
+            SceneHelper.ShowLoadingBlocker();
+
+            if (lastUsedBundle)
+                lastUsedBundle.Unload(true);
+
+            lastUsedBundle = AssetBundle.LoadFromMemory(buttonScript?.BundleDataToLoad);
+            buttonScript.BundleName = lastUsedBundle;
+            buttonScript.SceneToLoad = lastUsedBundle.GetAllScenePaths().FirstOrDefault();
+
             if (string.IsNullOrEmpty(buttonScript?.SceneToLoad)) return;
 
             SceneHelper.Instance.LoadSceneAsync(buttonScript.SceneToLoad, false);
             currentLevelpath = buttonScript.SceneToLoad;
             currentLevelName = buttonScript.LevelName.text;
-
-            SceneHelper.ShowLoadingBlocker();
 
             SceneManager.LoadSceneAsync(buttonScript.SceneToLoad).completed += operation =>
             {
@@ -103,7 +130,8 @@ namespace DoomahLevelLoader
         public static void SetLevelButtonScriptProperties(LevelButtonScript buttonScript, AssetBundleInfo bundleInfo)
         {
             buttonScript.BundleName = bundleInfo.Bundle;
-            buttonScript.SceneToLoad = bundleInfo.ScenePaths.FirstOrDefault();
+            buttonScript.BundleDataToLoad = bundleInfo.BundleDataToLoad;
+            buttonScript.SceneToLoad = "";
             buttonScript.OpenCamp = bundleInfo.IsCampaign;
             buttonScript.FileSize.text = bundleInfo.FileSize;
 
@@ -131,13 +159,18 @@ namespace DoomahLevelLoader
             buttonScript.NoLevel.gameObject.SetActive(!hasLevelName);
             buttonScript.LevelImageButtonThing.gameObject.SetActive(hasLevelName);
         }
-
-        public static bool IsSceneInAnyAssetBundle(string sceneName) => AssetBundles.Any(bundle => bundle.ScenePaths.Contains(sceneName));
+        public static bool IsSceneInAnyAssetBundle(string sceneName)
+        {
+            if(lastUsedBundle)
+                return lastUsedBundle.GetAllScenePaths().Contains(sceneName);
+            return false;
+        }
     }
 
     public class AssetBundleInfo
     {
         public AssetBundle Bundle;
+        public byte[] BundleDataToLoad;
         public List<string> ScenePaths;
         public List<string> LevelNames;
         public Dictionary<string, Texture2D> LevelImages;
@@ -147,11 +180,7 @@ namespace DoomahLevelLoader
 
         public AssetBundleInfo(byte[] bundleData, ZipArchive archive)
         {
-            using (MemoryStream bundleStream = new MemoryStream(bundleData))
-            {
-                Bundle = AssetBundle.LoadFromMemory(bundleStream.ToArray());
-            }
-
+            BundleDataToLoad = bundleData;
             ZipArchiveEntry infoJsonEntry = archive.GetEntry("info.json");
             ZipArchiveEntry infoTxtEntry = archive.GetEntry("info.txt");
 
@@ -173,13 +202,7 @@ namespace DoomahLevelLoader
             }
 
             IsCampaign = levelInfo?.IsCampaign ?? false;
-            ScenePaths = new List<string>(levelInfo?.Scenes ?? new List<string>());
             LevelNames = levelInfo?.LevelNames ?? new List<string>();
-
-            if (!IsCampaign && ScenePaths.Count == 0)
-            {
-                ExtractSceneNames();
-            }
 
             // fix missing level images
             levelInfo.LevelImages = new List<string>();
@@ -190,15 +213,6 @@ namespace DoomahLevelLoader
             LevelImages = LoadLevelImages(levelInfo?.LevelImages, archive);
             FileSize = GetFileSize(bundleData.Length);
             Author = levelInfo?.Author;
-
-            void ExtractSceneNames()
-            {
-                foreach (var scenePath in Bundle.GetAllScenePaths())
-                {
-                    string sceneName = Path.GetFileNameWithoutExtension(scenePath);
-                    ScenePaths.Add(sceneName);
-                }
-            }
 
             Dictionary<string, Texture2D> LoadLevelImages(List<string> imagePaths, ZipArchive zipArchive)
             {
