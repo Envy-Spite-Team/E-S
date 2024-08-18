@@ -99,6 +99,15 @@ namespace DoomahLevelLoader
                 __instance.targetTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
             }
             catch { }
+
+            foreach (AudioSource audio in GameObject.FindObjectsOfTypeAll(typeof(AudioSource)))
+            {
+                try
+                {
+                    if (audio.outputAudioMixerGroup.audioMixer.name == "MusicAudio" || audio.outputAudioMixerGroup.audioMixer.name == "MusicAudio_0")
+                        audio.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
+                } catch { }
+            }
         }
     }
 }
