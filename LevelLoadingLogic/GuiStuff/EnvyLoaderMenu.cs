@@ -83,12 +83,9 @@ public class EnvyLoaderMenu : MonoBehaviour
 			{
 				buttonScript.SceneToLoad = "";
 			}
-			
-			if (!string.IsNullOrEmpty(buttonScript.SceneToLoad))
-			{
-				buttonScript.LevelButtonReal.onClick.AddListener(() => Loaderscene.LoadScene(buttonScript));
-			}
-		}
+
+            buttonScript.LevelButtonReal.onClick.AddListener(() => Loaderscene.LoadScene(buttonScript));
+        }
 	}
 
 	public static void ClearContentStuffChildren()

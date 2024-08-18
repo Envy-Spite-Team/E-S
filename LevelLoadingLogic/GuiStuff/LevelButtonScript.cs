@@ -17,6 +17,9 @@ namespace DoomahLevelLoader
         public AssetBundle BundleName;
 
         [HideInInspector]
+        public byte[] BundleDataToLoad;
+
+        [HideInInspector]
         public string SceneToLoad;
 
         [HideInInspector]
