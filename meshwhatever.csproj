@@ -335,8 +335,4 @@
 	    <HintPath>lib\Vertx.Debugging.Runtime.dll</HintPath>
 	  </Reference>
 	</ItemGroup>
-
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	  <Exec Command="copy &quot;C:\Dev\VSProjects\E&amp;S\bin\Debug\netstandard2.0\DoomahLevelLoader.dll&quot; &quot;C:\Users\Leo\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Default\BepInEx\plugins\DoomahLevelLoader.dll&quot;" />
-	</Target>
 </Project>
