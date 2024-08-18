@@ -34,14 +34,14 @@ namespace DoomahLevelLoader
             {
                 string baseName = group.Key;
                 var sortedParts = group.Value.OrderBy(f => int.Parse(filePattern.Match(Path.GetFileName(f)).Groups["part"].Value)).ToList();
-                var mergedFilePath = Path.Combine(PartsPath, baseName + ".doomah");
+                var mergedFilePath = Path.Combine(PartsPath, baseName); //IT ALREADY HAS THE .DOOMAH EXTENSION WRAHHHH
 
                 using (var outputStream = File.Create(mergedFilePath))
                 {
                     foreach (var part in sortedParts)
                     {
                         using (var inputStream = File.OpenRead(part))
-                            await inputStream.CopyToAsync(outputStream); // Asynchronous file copying
+                            await inputStream.CopyToAsync(outputStream);
                     }
                 }
 
