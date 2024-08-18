@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -84,10 +84,11 @@ namespace DoomahLevelLoader
             }
         }
 
-        public static void RefreshLevels()
+        public static async void RefreshLevels()
         {
             AssetBundles = new List<AssetBundleInfo>();
-            LoadLevels();
+            await Merger.MergeFiles();
+            await LoadLevels();
             onLevelsLoaded += () => EnvyLoaderMenu.UpdateLevelListing();
         }
 
@@ -161,7 +162,7 @@ namespace DoomahLevelLoader
         }
         public static bool IsSceneInAnyAssetBundle(string sceneName)
         {
-            if(lastUsedBundle)
+            if (lastUsedBundle)
                 return lastUsedBundle.GetAllScenePaths().Contains(sceneName);
             return false;
         }
@@ -206,8 +207,9 @@ namespace DoomahLevelLoader
 
             // fix missing level images
             levelInfo.LevelImages = new List<string>();
-            foreach (ZipArchiveEntry file in archive.Entries) {
-                if(Path.GetExtension(file.FullName) == ".png") levelInfo?.LevelImages.Add(file.FullName);
+            foreach (ZipArchiveEntry file in archive.Entries)
+            {
+                if (Path.GetExtension(file.FullName) == ".png") levelInfo?.LevelImages.Add(file.FullName);
             }
 
             LevelImages = LoadLevelImages(levelInfo?.LevelImages, archive);
