@@ -5,5 +5,5 @@ Our discord server is [here](https://discord.gg/RY8J67neJ9)
 
 # SPITE SET UP TOOL
 
-[Vanity](https://github.com/ImNotSimon/Vanity-tool)
+[Vanity](https://github.com/eternalUnion/VanityReprised)
 
