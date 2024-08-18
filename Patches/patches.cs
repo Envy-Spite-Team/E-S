@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using Logic;
+using System.Collections;
 
 namespace DoomahLevelLoader
 {
@@ -83,6 +84,13 @@ namespace DoomahLevelLoader
     {
         static void Postfix(MusicManager __instance)
         {
+            __instance.StartCoroutine(waitForCustom(__instance));
+        }
+        static IEnumerator waitForCustom(MusicManager __instance)
+        {
+            yield return new WaitForSeconds(0.25f);
+            if (!Plugin.IsCustomLevel) yield break;
+
             try // just incase someones level is setup weird
             {
                 __instance.battleTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
