@@ -1,4 +1,4 @@
-using BepInEx;
+﻿using BepInEx;
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
@@ -19,7 +19,7 @@ namespace DoomahLevelLoader
     public class Plugin : BaseUnityPlugin
     {
         private AssetBundle terminal;
-		public static bool IsCustomLevel = false;
+        public static bool IsCustomLevel = false;
         private static Plugin _instance;
 
         public static Plugin Instance => _instance;
@@ -65,24 +65,28 @@ namespace DoomahLevelLoader
             return obj;
         }
 
-        private void Awake()
+        private async void Awake()
         {
             Logger.LogInfo("If you see this, dont panick! because everything is fine :)");
             terminal = Loader.LoadTerminal();
-			
+
             _instance = this;
 
             Harmony val = new Harmony("doomahreal.ultrakill.levelloader");
             val.PatchAll();
 
-            if(!Directory.Exists(getConfigPath()))
+            if (!Directory.Exists(getConfigPath()))
             {
                 Directory.CreateDirectory(getConfigPath());
             }
-			
+
+            await Merger.MergeFiles();
+
+            // After merging, load the levels
+            Loaderscene.LoadLevels();
+
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-			Loaderscene.LoadLevels();
         }
 
         private void OnDestroy()
@@ -90,62 +94,62 @@ namespace DoomahLevelLoader
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
         }
-		
-		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-		{
-			bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
-			bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
 
-			if (isNotBootstrapOrIntro)
-			{
-				ShaderManager.CreateShaderDictionary();
-				InstantiateEnvyScreen(isMainMenu);
-			}
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
+            bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
 
-			if (ShaderManager.shaderDictionary.Count <= 0)
-			{
-				StartCoroutine(ShaderManager.LoadShadersAsync());
-			}
+            if (isNotBootstrapOrIntro)
+            {
+                ShaderManager.CreateShaderDictionary();
+                InstantiateEnvyScreen(isMainMenu);
+            }
 
-			if (Loaderscene.IsSceneInAnyAssetBundle(scene.name))
-			{
-				Fixorsmth();
-			}
-			else
-			{
-				IsCustomLevel = false;
-				Loaderscene.currentLevelName = null;
-			}
-		}
-		
-		public static void Fixorsmth()
-		{
-			SceneHelper.CurrentScene = SceneManager.GetActiveScene().name;
-			Camera mainCamera = Camera.main;
-			IsCustomLevel = true;
-			mainCamera.clearFlags = CameraClearFlags.Skybox;
-			_instance.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
-		}
+            if (ShaderManager.shaderDictionary.Count <= 0)
+            {
+                StartCoroutine(ShaderManager.LoadShadersAsync());
+            }
+
+            if (Loaderscene.IsSceneInAnyAssetBundle(scene.name))
+            {
+                Fixorsmth();
+            }
+            else
+            {
+                IsCustomLevel = false;
+                Loaderscene.currentLevelName = null;
+            }
+        }
+
+        public static void Fixorsmth()
+        {
+            SceneHelper.CurrentScene = SceneManager.GetActiveScene().name;
+            Camera mainCamera = Camera.main;
+            IsCustomLevel = true;
+            mainCamera.clearFlags = CameraClearFlags.Skybox;
+            _instance.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
+        }
 
         private void OnSceneUnloaded(Scene scene)
         {
-			if (SceneHelper.CurrentScene == "Main Menu")
-			{
-				InstantiateEnvyScreen(true);
+            if (SceneHelper.CurrentScene == "Main Menu")
+            {
+                InstantiateEnvyScreen(true);
                 ShaderManager.CreateShaderDictionary();
             }
         }
 
         private void InstantiateEnvyScreen(bool mainMenu)
-		{
+        {
             GameObject envyScreenPrefab = terminal.LoadAsset<GameObject>("EnvyScreen.prefab");
             // Fun Fact: my dumbass forgot to put envyscreen in the assetbundle and i was stuck debugging it for 2 hours RAHHHHHHHHHHHHH --thebluenebula
-			// smart ass --doomah
+            // smart ass --doomah
             if (envyScreenPrefab == null)
-			{
-				Debug.LogError("EnvyScreen prefab not found in the terminal bundle.");
-				return;
-			}
+            {
+                Debug.LogError("EnvyScreen prefab not found in the terminal bundle.");
+                return;
+            }
 
             GameObject canvasObject = GameObject.Find("/Canvas/Main Menu (1)");
             if (mainMenu == false)
@@ -154,15 +158,15 @@ namespace DoomahLevelLoader
             }
 
             if (canvasObject == null)
-			{
+            {
                 return;
-			}
+            }
 
-			GameObject instantiatedObject = Instantiate(envyScreenPrefab);
+            GameObject instantiatedObject = Instantiate(envyScreenPrefab);
 
             instantiatedObject.transform.SetParent(canvasObject.transform, false);
-			instantiatedObject.transform.localPosition = Vector3.zero;
-			instantiatedObject.transform.localScale = new Vector3(1f, 1f, 1f);
-		}
+            instantiatedObject.transform.localPosition = Vector3.zero;
+            instantiatedObject.transform.localScale = new Vector3(1f, 1f, 1f);
+        }
     }
 }
