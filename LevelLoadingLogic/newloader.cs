@@ -26,12 +26,13 @@ namespace DoomahLevelLoader
         public static async Task LoadLevels()
         {
             // lebron james reportedly caught trying to invoke a null variable --thebluenebula
+            onLevelsLoaded = null;
             onLevelsLoaded += () => EnvyLoaderMenu.UpdateLevelListing();
             string[] files = Directory.GetFiles(LevelsPath, "*.doomah");
 
             GameObject myBlocker = GameObject.Instantiate(MonoSingleton<SceneHelper>.Instance.loadingBlocker, MonoSingleton<SceneHelper>.Instance.loadingBlocker.transform.parent);
             TextMeshProUGUI text = myBlocker.GetComponentInChildren<TextMeshProUGUI>();
-            text.text = "Loading levels...\n0/" + files.Length.ToString();
+            text.text = "Loading levels...\n<size=60><b>0/" + files.Length.ToString() + "</b></size>";
             myBlocker.SetActive(true);
 
             loadProgress = 0;
@@ -79,7 +80,7 @@ namespace DoomahLevelLoader
                         await Task.Delay(1);
 
                         loadProgress++;
-                        blocker.text = "Loading levels...\n<size=40><b>" + loadProgress.ToString() + "/" + loadProgressMax.ToString();
+                        blocker.text = "Loading levels...\n<size=60><b>" + loadProgress.ToString() + "/" + loadProgressMax.ToString() + "</b></size>";
                     }
                 }
             }
@@ -90,7 +91,7 @@ namespace DoomahLevelLoader
             AssetBundles = new List<AssetBundleInfo>();
             await Merger.MergeFiles();
             await LoadLevels();
-            onLevelsLoaded += () => EnvyLoaderMenu.UpdateLevelListing();
+            //onLevelsLoaded += () => EnvyLoaderMenu.UpdateLevelListing();
         }
 
         public static byte[] ReadFully(Stream input)
