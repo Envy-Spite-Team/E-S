@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,7 +25,8 @@ namespace DoomahLevelLoader
         static UnityAction onLevelsLoaded;
         public static async Task LoadLevels()
         {
-            onLevelsLoaded = null;
+            // lebron james reportedly caught trying to invoke a null variable --thebluenebula
+            onLevelsLoaded += () => EnvyLoaderMenu.UpdateLevelListing();
             string[] files = Directory.GetFiles(LevelsPath, "*.doomah");
 
             GameObject myBlocker = GameObject.Instantiate(MonoSingleton<SceneHelper>.Instance.loadingBlocker, MonoSingleton<SceneHelper>.Instance.loadingBlocker.transform.parent);
@@ -40,11 +41,11 @@ namespace DoomahLevelLoader
             {
                 try
                 {
-                    LoadBundlesFromDoomah(file, fileIndex / 2, text);
+                    LoadBundlesFromDoomah(file, fileIndex / 2, text); // SHUT THE FUCK UP!!!!! :fire: --thebluenebula
                     UnityEngine.Debug.Log(file + " loaded!");
                     await Task.Delay(16);
                 }
-                catch (Exception e) { UnityEngine.Debug.Log(file + " failed to load!"); }
+                catch (Exception e) { UnityEngine.Debug.LogError(file + " failed to load: " + e.ToString()); }
 
                 fileIndex++;
             }
@@ -78,7 +79,7 @@ namespace DoomahLevelLoader
                         await Task.Delay(1);
 
                         loadProgress++;
-                        blocker.text = "Loading levels...\n" + loadProgress.ToString() + "/" + loadProgressMax.ToString();
+                        blocker.text = "Loading levels...\n<size=40><b>" + loadProgress.ToString() + "/" + loadProgressMax.ToString();
                     }
                 }
             }
