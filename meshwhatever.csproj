@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
@@ -38,7 +38,7 @@
 
 	<ItemGroup>
 	  <Reference Include="Assembly-CSharp">
-	    <HintPath>G:\SteamLibrary\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Assembly-CSharp.dll</HintPath>
+	    <HintPath>lib\Assembly-CSharp.dll</HintPath>
 	  </Reference>
 	  <Reference Include="Autodesk.Fbx">
 	    <HintPath>lib\Autodesk.Fbx.dll</HintPath>
