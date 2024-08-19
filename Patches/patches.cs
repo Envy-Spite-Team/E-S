@@ -18,8 +18,12 @@ namespace DoomahLevelLoader
         {
 			if (Plugin.IsCustomLevel)
 			{
-				SceneManager.LoadScene(Loaderscene.currentLevelpath);
-				return false;
+                SceneManager.LoadSceneAsync(Loaderscene.currentLevelpath).completed += operation =>
+                {
+                    SceneHelper.DismissBlockers();
+                    Plugin.Fixorsmth();
+                };
+                return false;
 			}
 			return true;
 		}
