@@ -16,18 +16,19 @@ namespace DoomahLevelLoader
         [HarmonyPrefix]
         public static bool Prefix()
         {
-			if (Plugin.IsCustomLevel)
+		if (Plugin.IsCustomLevel)
+		{
+			SceneManager.LoadSceneAsync(Loaderscene.currentLevelpath).completed += operation =>
 			{
-                SceneManager.LoadSceneAsync(Loaderscene.currentLevelpath).completed += operation =>
-                {
-                    SceneHelper.DismissBlockers();
-                    Plugin.Fixorsmth();
-                };
-                return false;
-			}
-			return true;
+			    SceneHelper.DismissBlockers();
+			    Plugin.Fixorsmth();
+			};
+			return false;
 		}
+		return true;
+	}
     }
+
 
     [HarmonyPatch(typeof(StatsManager))]
 	[HarmonyPatch("Start")]
