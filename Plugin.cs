@@ -111,15 +111,13 @@ namespace DoomahLevelLoader
                 StartCoroutine(ShaderManager.LoadShadersAsync());
             }
 
-            if (Loaderscene.IsSceneInAnyAssetBundle(scene.name))
-            {
-                Fixorsmth();
-            }
-            else
+            // this was broken af with the new code
+            if (!Loaderscene.IsSceneInAnyAssetBundle(scene.name))
             {
                 IsCustomLevel = false;
                 Loaderscene.currentLevelName = null;
             }
+            else IsCustomLevel = true;
         }
 
         public static void Fixorsmth()

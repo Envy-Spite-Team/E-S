@@ -50,14 +50,9 @@ namespace DoomahLevelLoader
 	{
 		static void Postfix(LevelNameFinder __instance)
 		{
-			if (!Plugin.IsCustomLevel)
-				return;
-			
-			if (string.IsNullOrEmpty(Loaderscene.currentLevelName))
-				return;
-
-			__instance.txt2.text = Loaderscene.currentLevelName;
-		}
+            // why ignore whitespace brah
+			if (Plugin.IsCustomLevel) __instance.txt2.text = Loaderscene.currentLevelName;
+        }
 	}
 
     [HarmonyPatch(typeof(FinalRank))]
