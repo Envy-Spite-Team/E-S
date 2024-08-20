@@ -22,12 +22,11 @@ namespace DoomahLevelLoader
         public static string currentLevelpath = null;
         public static List<AssetBundleInfo> AssetBundles = new List<AssetBundleInfo>();
 
-        static UnityAction onLevelsLoaded;
         public static async Task LoadLevels()
         {
             // lebron james reportedly caught trying to invoke a null variable --thebluenebula
-            onLevelsLoaded = null;
-            onLevelsLoaded += () => EnvyLoaderMenu.UpdateLevelListing();
+            // fuck onLevelsLoaded, coconut.jpeg my ass --triggered
+
             string[] files = Directory.GetFiles(LevelsPath, "*.doomah");
 
             GameObject myBlocker = GameObject.Instantiate(MonoSingleton<SceneHelper>.Instance.loadingBlocker, MonoSingleton<SceneHelper>.Instance.loadingBlocker.transform.parent);
@@ -42,7 +41,8 @@ namespace DoomahLevelLoader
             {
                 try
                 {
-                    LoadBundlesFromDoomah(file, fileIndex / 2, text); // SHUT THE FUCK UP!!!!! :fire: --thebluenebula
+                    _ = LoadBundlesFromDoomah(file, fileIndex / 2, text); // SHUT THE FUCK UP!!!!! :fire: --thebluenebula
+                    // i made it shut the fuck up lmao --triggered
                     UnityEngine.Debug.Log(file + " loaded!");
                     await Task.Delay(16);
                 }
@@ -52,7 +52,7 @@ namespace DoomahLevelLoader
             }
 
             GameObject.Destroy(myBlocker);
-            onLevelsLoaded.Invoke();
+            EnvyLoaderMenu.UpdateLevelListing();
         }
         static short loadProgress = 0;
         static int loadProgressMax = 0;
@@ -66,7 +66,6 @@ namespace DoomahLevelLoader
                 {
                     if (entry.FullName.EndsWith(".bundle", StringComparison.OrdinalIgnoreCase))
                     {
-
                         Stream s = entry.Open();
                         byte[] bundleBytes;
                         using (var memstream = new MemoryStream())
@@ -76,8 +75,6 @@ namespace DoomahLevelLoader
                         }
 
                         AssetBundles.Add(new AssetBundleInfo(bundleBytes, archive));
-
-                        await Task.Delay(1);
 
                         loadProgress++;
                         blocker.text = "Loading levels...\n<size=60><b>" + loadProgress.ToString() + "/" + loadProgressMax.ToString() + "</b></size>";
@@ -91,7 +88,6 @@ namespace DoomahLevelLoader
             AssetBundles = new List<AssetBundleInfo>();
             await Merger.MergeFiles();
             await LoadLevels();
-            //onLevelsLoaded += () => EnvyLoaderMenu.UpdateLevelListing();
         }
 
         public static byte[] ReadFully(Stream input)
@@ -103,13 +99,16 @@ namespace DoomahLevelLoader
             }
         }
 
-        static AssetBundle lastUsedBundle;
+        public static AssetBundle lastUsedBundle { get; private set; }
+        public static bool isLoadingScene { get; private set; } // you can spam click button so i fixed that :D --triggered
         public static void LoadScene(LevelButtonScript buttonScript)
         {
+            if (isLoadingScene) return;
+            isLoadingScene = true;
+
             SceneHelper.ShowLoadingBlocker();
 
-            if (lastUsedBundle)
-                lastUsedBundle.Unload(true);
+            if (lastUsedBundle) lastUsedBundle.Unload(true);
 
             lastUsedBundle = AssetBundle.LoadFromMemory(buttonScript?.BundleDataToLoad);
             buttonScript.BundleName = lastUsedBundle;
@@ -125,6 +124,7 @@ namespace DoomahLevelLoader
             {
                 SceneHelper.DismissBlockers();
                 Plugin.Fixorsmth();
+                isLoadingScene = false;
             };
         }
 
@@ -165,7 +165,10 @@ namespace DoomahLevelLoader
         public static bool IsSceneInAnyAssetBundle(string sceneName)
         {
             if (lastUsedBundle)
-                return lastUsedBundle.GetAllScenePaths().Contains(sceneName);
+            {
+                foreach (string path in lastUsedBundle.GetAllScenePaths())
+                    if (Path.GetFileNameWithoutExtension(path) == sceneName) return true;
+            }
             return false;
         }
     }
