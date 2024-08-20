@@ -1,9 +1,7 @@
-# E&S
-A repo that keeps E&amp;S maintained after Simon and Doomah quit.
+# Envy & Spite
+The Offical Envy Level Loader repo.
 
 Our discord server is [here](https://discord.gg/RY8J67neJ9)
 
-# SPITE SET UP TOOL
-
-[Vanity](https://github.com/eternalUnion/VanityReprised)
-
+# HOW TO SETUP SPITE
+If you stumbled across this repo and want to setup The Spite level editor for ULTRAKILL, simply [visit this page on the wiki](https://layzyidiot.github.io/e-sw/#/setup-editor).
