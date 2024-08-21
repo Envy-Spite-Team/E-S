@@ -140,33 +140,13 @@ public class DropdownHandler : MonoBehaviour
 
 	private int LoadDifficulty()
 	{
-		if (File.Exists(settingsFilePath))
-		{
-			string json = File.ReadAllText(settingsFilePath);
-			Dictionary<string, int> settings = JsonConvert.DeserializeObject<Dictionary<string, int>>(json);
-
-			if (settings != null && settings.TryGetValue(selectedDifficultyKey, out int difficulty))
-			{
-				return difficulty;
-			}
-		}
-		return 2;
-	}
-
-	private void SaveDifficulty(int difficulty)
-	{
-		Dictionary<string, int> settings = new Dictionary<string, int>
-		{
-			{ selectedDifficultyKey, difficulty }
-		};
-
-		string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-		File.WriteAllText(settingsFilePath, json);
-	}
+            return MonoSingleton<PrefsManager>.Instance.GetInt("difficulty");
+    }
 
 	public void OnDropdownValueChanged(int index)
 	{
-		SaveDifficulty(index);
-	}
+			Debug.Log("Difficulty set to " + index);
+            MonoSingleton<PrefsManager>.Instance.SetInt("difficulty", index);
+    }
 }
 }

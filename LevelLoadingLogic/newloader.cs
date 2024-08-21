@@ -136,7 +136,7 @@ namespace DoomahLevelLoader
             buttonScript.BundleDataToLoad = bundleInfo.BundleDataToLoad;
             buttonScript.SceneToLoad = "";
             buttonScript.OpenCamp = bundleInfo.IsCampaign;
-            buttonScript.FileSize.text = bundleInfo.FileSize;
+            //buttonScript.FileSize.text = bundleInfo.FileSize;
 
             buttonScript.Author.text = bundleInfo.Author ?? "Unknown";
             buttonScript.LevelName.text = bundleInfo.LevelNames.Any() ? bundleInfo.LevelNames.First() : "Unnamed";
@@ -218,7 +218,7 @@ namespace DoomahLevelLoader
             }
 
             LevelImages = LoadLevelImages(levelInfo?.LevelImages, archive);
-            FileSize = GetFileSize(bundleData.Length);
+            //FileSize = GetFileSize(bundleData.Length);
             Author = levelInfo?.Author;
 
             Dictionary<string, Texture2D> LoadLevelImages(List<string> imagePaths, ZipArchive zipArchive)

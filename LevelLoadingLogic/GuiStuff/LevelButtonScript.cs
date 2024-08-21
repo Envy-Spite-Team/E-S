@@ -9,7 +9,7 @@ namespace DoomahLevelLoader
         public Image LevelImageButtonThing;
         public Button LevelButtonReal;
         public TextMeshProUGUI NoLevel;
-        public TextMeshProUGUI FileSize;
+        //public TextMeshProUGUI FileSize;
         public TextMeshProUGUI Author;
         public TextMeshProUGUI LevelName;
 
