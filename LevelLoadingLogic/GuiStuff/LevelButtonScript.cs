@@ -1,4 +1,6 @@
-﻿using TMPro;
+﻿using System.Collections.Generic;
+using System.IO.Compression;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,10 +22,16 @@ namespace DoomahLevelLoader
         public byte[] BundleDataToLoad;
 
         [HideInInspector]
+        public ZipArchive archiveZip;
+
+        [HideInInspector]
         public string SceneToLoad;
 
         [HideInInspector]
         public bool OpenCamp;
+
+        [HideInInspector]
+        public List<string> Scripts;
 
         private static LevelButtonScript instance;
         public static LevelButtonScript Instance

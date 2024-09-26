@@ -21,6 +21,9 @@ public class EnvyLoaderMenu : MonoBehaviour
 	public GameObject FuckingPleaseWait;
 	public TextMeshProUGUI MOTDMessage;
 
+		[HideInInspector]
+		public bool RefreshOnOpen;
+
 	private const string motdUrl = "https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/main/MOTD.txt";
 
 	public static EnvyLoaderMenu Instance
@@ -45,8 +48,20 @@ public class EnvyLoaderMenu : MonoBehaviour
 		EnvyLoaderMenu.CreateLevels();
 		StartCoroutine(LoadMOTD());
 	}
-	
-	private IEnumerator LoadMOTD()
+
+        public void Update()
+        {
+            if (RefreshOnOpen)
+            {
+                if (instance.gameObject.activeSelf)
+				{
+                    Loaderscene.RefreshLevels();
+                    RefreshOnOpen = false;
+                }
+            }
+        }
+
+        private IEnumerator LoadMOTD()
 	{
 		using (UnityWebRequest webRequest = UnityWebRequest.Get(motdUrl))
 		{

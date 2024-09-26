@@ -20,7 +20,9 @@ namespace DoomahLevelLoader
         public static string LevelsPath => Plugin.getConfigPath();
         public static string currentLevelName = null;
         public static string currentLevelpath = null;
+        public static List<string> loadedScripts = new List<string>();
         public static List<AssetBundleInfo> AssetBundles = new List<AssetBundleInfo>();
+        public static bool lastLevelUsesScripts = false;
 
         public static async Task LoadLevels()
         {
@@ -59,6 +61,7 @@ namespace DoomahLevelLoader
         static async Task LoadBundlesFromDoomah(string doomahFile, int index, TextMeshProUGUI blocker)
         {
             await Task.Delay(16); //big wait to let ShowLoadingBlocker render
+            //                      ^^^ @Pyrocynical
 
             using (ZipArchive archive = ZipFile.OpenRead(doomahFile))
             {
@@ -100,6 +103,7 @@ namespace DoomahLevelLoader
         }
 
         public static AssetBundle lastUsedBundle { get; private set; }
+        public static ZipArchive lastUsedArchive { get; private set; }
         public static bool isLoadingScene { get; private set; } // you can spam click button so i fixed that :D --triggered
         public static void LoadScene(LevelButtonScript buttonScript)
         {
@@ -126,6 +130,34 @@ namespace DoomahLevelLoader
                 Plugin.Fixorsmth();
                 isLoadingScene = false;
             };
+
+            lastLevelUsesScripts = false;
+            foreach (string script in buttonScript.Scripts)
+            {
+                lastLevelUsesScripts = true;
+                var scriptEntry = buttonScript.archiveZip.GetEntry(script);
+                if (scriptEntry == null) continue;
+
+                using (var reader = new MemoryStream())
+                {
+                    scriptEntry.Open().CopyTo(reader);
+                    byte[] scriptBytes = reader.ToArray();
+
+                    if (Loaderscene.loadedScripts.Contains(script))
+                    {
+                        UnityEngine.Debug.Log("Envy: erm.. you already got loaded " + script);
+                    }
+                    else
+                    {
+                        Loaderscene.loadedScripts.Add(script);
+                        try
+                        {
+                            Assembly.Load(scriptBytes);
+                        }
+                        catch { UnityEngine.Debug.LogError("Script [" + script + "] failed to load, please make sure there is no errors within the script."); }
+                    }
+                }
+            }
         }
 
         public static void OpenFilesFolder() => Application.OpenURL("file://" + Plugin.getConfigPath().Replace("\\", "/"));
@@ -136,6 +168,8 @@ namespace DoomahLevelLoader
             buttonScript.BundleDataToLoad = bundleInfo.BundleDataToLoad;
             buttonScript.SceneToLoad = "";
             buttonScript.OpenCamp = bundleInfo.IsCampaign;
+            buttonScript.Scripts = bundleInfo.Scripts;
+            buttonScript.archiveZip = bundleInfo.archiveZip;
             //buttonScript.FileSize.text = bundleInfo.FileSize;
 
             buttonScript.Author.text = bundleInfo.Author ?? "Unknown";
@@ -177,16 +211,19 @@ namespace DoomahLevelLoader
     {
         public AssetBundle Bundle;
         public byte[] BundleDataToLoad;
+        public ZipArchive archiveZip;
         public List<string> ScenePaths;
         public List<string> LevelNames;
         public Dictionary<string, Texture2D> LevelImages;
         public string FileSize;
         public string Author;
         public bool IsCampaign;
+        public List<string> Scripts = new List<string>();
 
         public AssetBundleInfo(byte[] bundleData, ZipArchive archive)
         {
             BundleDataToLoad = bundleData;
+            archiveZip = archive;
             ZipArchiveEntry infoJsonEntry = archive.GetEntry("info.json");
             ZipArchiveEntry infoTxtEntry = archive.GetEntry("info.txt");
 
@@ -215,6 +252,7 @@ namespace DoomahLevelLoader
             foreach (ZipArchiveEntry file in archive.Entries)
             {
                 if (Path.GetExtension(file.FullName) == ".png") levelInfo?.LevelImages.Add(file.FullName);
+                if (Path.GetExtension(file.FullName) == ".dll") Scripts.Add(file.FullName);
             }
 
             LevelImages = LoadLevelImages(levelInfo?.LevelImages, archive);
@@ -249,44 +287,6 @@ namespace DoomahLevelLoader
                 }
 
                 return levelImages;
-            }
-
-            string GetFileSize(long length)
-            {
-                string suffix;
-                double readable;
-
-                switch (length)
-                {
-                    case >= 0x1000000000000000:
-                        suffix = "EiB";
-                        readable = length >> 50;
-                        break;
-                    case >= 0x4000000000000:
-                        suffix = "PiB";
-                        readable = length >> 40;
-                        break;
-                    case >= 0x10000000000:
-                        suffix = "TiB";
-                        readable = length >> 30;
-                        break;
-                    case >= 0x40000000:
-                        suffix = "GiB";
-                        readable = length >> 20;
-                        break;
-                    case >= 0x100000:
-                        suffix = "MiB";
-                        readable = length >> 10;
-                        break;
-                    case >= 0x400:
-                        suffix = "KiB";
-                        readable = length;
-                        break;
-                    default:
-                        return length.ToString("0 B");
-                }
-
-                return (readable / 1024).ToString("0.## ") + suffix;
             }
         }
     }

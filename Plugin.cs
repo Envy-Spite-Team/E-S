@@ -15,12 +15,16 @@ using TMPro;
 
 namespace DoomahLevelLoader
 {
-    [BepInPlugin("doomahreal.ultrakill.levelloader", "DoomahLevelLoader", "1.0.0")]
+    [BepInPlugin("doomahreal.ultrakill.levelloader", "DoomahLevelLoader", "2.0.0")] // Make sure to change after each update!
     public class Plugin : BaseUnityPlugin
     {
         private AssetBundle terminal;
         public static bool IsCustomLevel = false;
         private static Plugin _instance;
+
+        public GameObject instantiatedDebug;
+
+        public string Version = "2.0.0"; // Make sure to change after each update!
 
         public static Plugin Instance => _instance;
 
@@ -95,6 +99,7 @@ namespace DoomahLevelLoader
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
         }
 
+        static ShowDebugInfo ShowDebugInfoInstance = new ShowDebugInfo();
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
@@ -118,6 +123,28 @@ namespace DoomahLevelLoader
                 Loaderscene.currentLevelName = null;
             }
             else IsCustomLevel = true;
+
+            // Register cheats
+            if (Plugin.IsCustomLevel)
+            {
+                GameObject debugInfoPrefab = terminal.LoadAsset<GameObject>("DebugInfo.prefab");
+                instantiatedDebug = Instantiate(debugInfoPrefab);
+
+                instantiatedDebug.transform.SetParent(GameObject.Find("/Canvas").transform, false);
+                instantiatedDebug.SetActive(false);
+                instantiatedDebug.transform.localPosition = new Vector3(-699, 60, 0);
+                instantiatedDebug.transform.localScale = new Vector3(2, 2, 2);
+
+                CheatsManager.Instance.RegisterCheat(ShowDebugInfoInstance, "Envy");
+            }
+            else
+            {
+                try
+                {
+                    CheatsManager.Instance.allRegisteredCheats["Envy"].Remove(ShowDebugInfoInstance);
+                }
+                catch { }
+            }
         }
 
         public static void Fixorsmth()
