@@ -5,8 +5,9 @@ using System.Collections.Generic;
 using System.Collections;
 using BepInEx;
 using HarmonyLib;
+using DoomahLevelLoader;
 
-	public class TriggerZoneBehavior : MonoBehaviour
+public class TriggerZoneBehavior : MonoBehaviour
 	{
 		public float delay = 2f;
 		public float activationDelay = 0.1f;
@@ -50,7 +51,7 @@ using HarmonyLib;
 							yield return new WaitForSeconds(activationDelay);
 						}
 						child.gameObject.SetActive(true);
-						Debug.Log("Trigger Activated child:  " + child.name);
+						Debugger.Log("Trigger Activated child:  " + child.name);
 					}
 					else
 					{

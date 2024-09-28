@@ -30,7 +30,7 @@ namespace DoomahLevelLoader
                     instance = FindObjectOfType<LevelUpdatePopUp>();
                     if (instance == null)
                     {
-                        Debug.LogError("bongbong bepinex log infestiation");
+                        Debugger.LogError("bongbong bepinex log infestiation");
                     }
                 }
                 return Instance;

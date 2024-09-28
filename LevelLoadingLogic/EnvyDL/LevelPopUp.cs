@@ -24,7 +24,7 @@ namespace DoomahLevelLoader
                     instance = FindObjectOfType<LevelPopUp>();
                     if (instance == null)
                     {
-                        Debug.LogError("EnvyScreen prefab not found or LevelPopUp instance not initialized.");
+                        Debugger.LogError("EnvyScreen prefab not found or LevelPopUp instance not initialized.");
                         return null;
                     }
                 }

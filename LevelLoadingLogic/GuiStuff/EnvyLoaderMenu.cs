@@ -11,157 +11,132 @@ using System.Threading;
 
 namespace DoomahLevelLoader
 {
-public class EnvyLoaderMenu : MonoBehaviour
-{
-	private static EnvyLoaderMenu instance;
+    public class EnvyLoaderMenu : MonoBehaviour
+    {
+        private static EnvyLoaderMenu instance;
 
-	public GameObject ContentStuff;
-	public GameObject LevelsMenu;
-	public GameObject LevelsButton;
-	public GameObject FuckingPleaseWait;
-	public TextMeshProUGUI MOTDMessage;
+        public GameObject ContentStuff;
+        public GameObject LevelsMenu;
+        public GameObject LevelsButton;
+        public GameObject FuckingPleaseWait;
+        public TextMeshProUGUI MOTDMessage;
+        public Image thatfuckingemojithatihate;
 
-		[HideInInspector]
-		public bool RefreshOnOpen;
+        [HideInInspector]
+        public bool RefreshOnOpen;
 
-	private const string motdUrl = "https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/main/MOTD.txt";
+        public static EnvyLoaderMenu Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = FindObjectOfType<EnvyLoaderMenu>();
+                    if (instance == null)
+                    {
+                        Debugger.LogError("EnvyScreen prefab not found or EnvyLoaderMenu instance not initialized.");
+                        return null;
+                    }
+                }
+                return instance;
+            }
+        }
 
-	public static EnvyLoaderMenu Instance
-	{
-		get
-		{
-			if (instance == null)
-			{
-				instance = FindObjectOfType<EnvyLoaderMenu>();
-				if (instance == null)
-				{
-					Debug.LogError("EnvyScreen prefab not found or EnvyLoaderMenu instance not initialized.");
-					return null;
-				}
-			}
-			return instance;
-		}
-	}
-
-	public void Start()
-	{
-		EnvyLoaderMenu.CreateLevels();
-		StartCoroutine(LoadMOTD());
-	}
+        public void Start()
+        {
+            EnvyLoaderMenu.CreateLevels();
+            StartCoroutine(MOTDManager.LoadMOTD(MOTDMessage, thatfuckingemojithatihate));
+        }
 
         public void Update()
         {
             if (RefreshOnOpen)
             {
                 if (instance.gameObject.activeSelf)
-				{
+                {
                     Loaderscene.RefreshLevels();
                     RefreshOnOpen = false;
                 }
             }
         }
 
-        private IEnumerator LoadMOTD()
-	{
-		using (UnityWebRequest webRequest = UnityWebRequest.Get(motdUrl))
-		{
-			yield return webRequest.SendWebRequest();
+        public static void CreateLevels()
+        {
+            foreach (AssetBundleInfo bundleInfo in Loaderscene.AssetBundles)
+            {
+                GameObject levelButtonObject = Instantiate(Instance.LevelsButton, Instance.ContentStuff.transform);
+                LevelButtonScript buttonScript = levelButtonObject.GetComponent<LevelButtonScript>();
 
-			if (webRequest.isNetworkError || webRequest.isHttpError)
-			{
-				Debug.LogError("Failed to fetch MOTD: " + webRequest.error);
-			}
-			else
-			{
-				string motdText = webRequest.downloadHandler.text;
-				if (!string.IsNullOrEmpty(motdText))
-				{
-					string[] lines = motdText.Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
-					string firstLine = lines.Length > 0 ? lines[0] : "No MOTD available";
+                Loaderscene.SetLevelButtonScriptProperties(buttonScript, bundleInfo);
 
-					MOTDMessage.text = firstLine;
-				}
-			}
-		}
-	}
+                if (bundleInfo.IsCampaign)
+                {
+                    buttonScript.SceneToLoad = "";
+                }
 
-	public static void CreateLevels()
-	{
-		foreach (AssetBundleInfo bundleInfo in Loaderscene.AssetBundles)
-		{
-			GameObject levelButtonObject = Instantiate(Instance.LevelsButton, Instance.ContentStuff.transform);
-			LevelButtonScript buttonScript = levelButtonObject.GetComponent<LevelButtonScript>();
-
-			Loaderscene.SetLevelButtonScriptProperties(buttonScript, bundleInfo);
-
-			if (bundleInfo.IsCampaign)
-			{
-				buttonScript.SceneToLoad = "";
-			}
-
-            buttonScript.LevelButtonReal.onClick.AddListener(() => Loaderscene.LoadScene(buttonScript));
+                buttonScript.LevelButtonReal.onClick.AddListener(() => Loaderscene.LoadScene(buttonScript));
+            }
         }
-	}
 
-	public static void ClearContentStuffChildren()
-	{
-		if (Instance == null) return;
+        public static void ClearContentStuffChildren()
+        {
+            if (Instance == null) return;
 
-		foreach (Transform child in Instance.ContentStuff.transform)
-		{
-			Destroy(child.gameObject);
-		}
-	}
+            foreach (Transform child in Instance.ContentStuff.transform)
+            {
+                Destroy(child.gameObject);
+            }
+        }
 
-	public static IEnumerator UpdateLevelListingCoroutine()
-	{
-		Instance.FuckingPleaseWait.SetActive(true);
+        public static IEnumerator UpdateLevelListingCoroutine()
+        {
+            Instance.FuckingPleaseWait.SetActive(true);
 
-		ClearContentStuffChildren();
-		CreateLevels();
+            ClearContentStuffChildren();
+            CreateLevels();
 
-		yield return null;
+            yield return null;
 
-		Instance.FuckingPleaseWait.SetActive(false);
-	}
+            Instance.FuckingPleaseWait.SetActive(false);
+        }
 
-	public static void UpdateLevelListing()
-	{
-		if (Instance != null)
-		{
-			Instance.StartCoroutine(UpdateLevelListingCoroutine());
-		}
-	}
-}
+        public static void UpdateLevelListing()
+        {
+            if (Instance != null)
+            {
+                Instance.StartCoroutine(UpdateLevelListingCoroutine());
+            }
+        }
+    }
 
-public class DropdownHandler : MonoBehaviour
-{
-	public TMP_Dropdown dropdown;
+    public class DropdownHandler : MonoBehaviour
+    {
+        public TMP_Dropdown dropdown;
 
-	private const string selectedDifficultyKey = "difficulty";
-	private string settingsFilePath;
+        private const string selectedDifficultyKey = "difficulty";
+        private string settingsFilePath;
 
-	private void Awake()
-	{
-		settingsFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "settings.json");
-	}
+        private void Awake()
+        {
+            settingsFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "settings.json");
+        }
 
-	private void OnEnable()
-	{
-		int savedDifficulty = LoadDifficulty();
-		dropdown.value = savedDifficulty;
-		dropdown.onValueChanged.AddListener(OnDropdownValueChanged);
-	}
+        private void OnEnable()
+        {
+            int savedDifficulty = LoadDifficulty();
+            dropdown.value = savedDifficulty;
+            dropdown.onValueChanged.AddListener(OnDropdownValueChanged);
+        }
 
-	private int LoadDifficulty()
-	{
+        private int LoadDifficulty()
+        {
             return MonoSingleton<PrefsManager>.Instance.GetInt("difficulty");
-    }
+        }
 
-	public void OnDropdownValueChanged(int index)
-	{
-			Debug.Log("Difficulty set to " + index);
+        public void OnDropdownValueChanged(int index)
+        {
+            Debugger.Log("Difficulty set to " + index);
             MonoSingleton<PrefsManager>.Instance.SetInt("difficulty", index);
+        }
     }
-}
 }

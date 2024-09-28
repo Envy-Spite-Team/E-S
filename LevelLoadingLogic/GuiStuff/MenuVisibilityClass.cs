@@ -24,7 +24,7 @@ namespace DoomahLevelLoader
                     instance = FindObjectOfType<MenuVisibilityClass>();
                     if (instance == null)
                     {
-                        Debug.LogError("WOWZERS! SOMEONE FORGOT TO FIX THIS!");
+                        Debugger.LogError("WOWZERS! SOMEONE FORGOT TO FIX THIS!");
                     }
                 }
                 return Instance;
@@ -44,14 +44,14 @@ namespace DoomahLevelLoader
                 AssignToFuckingLevels.SetActive(true);
                 AssignToMenuOpenButton.gameObject.SetActive(false);
                 MainMenuAgony.isAgonyOpen = true;
-                Debug.Log("open");
+                Debugger.Log("open");
             }
             else
             {
                 AssignToFuckingLevels.SetActive(false);
                 AssignToMenuOpenButton.gameObject.SetActive(true);
                 MainMenuAgony.isAgonyOpen = false;
-                Debug.Log("close");
+                Debugger.Log("close");
             }
         }
     }

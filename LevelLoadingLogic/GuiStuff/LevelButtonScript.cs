@@ -39,7 +39,7 @@ namespace DoomahLevelLoader
             get
             {
                 instance ??= FindObjectOfType<LevelButtonScript>();
-                if (instance == null) Debug.LogError("LevelButtonScript instance not found in the scene.");
+                if (instance == null) Debugger.LogError("LevelButtonScript instance not found in the scene.");
                 return instance;
             }
         }

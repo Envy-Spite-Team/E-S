@@ -28,8 +28,8 @@ namespace DoomahLevelLoader
         public string Name { get; set; }
         public string Author { get; set; }
         public string Img { get; set; }
-        public List<string> Urls { get; set; }
-        public List<byte[]> UrlsHash { get; set; }
+        public string[] Urls { get; set; }
+        public string[] UrlsHash { get; set; }
         public string Description { get; set; }
         public string Version { get; set; }
         public bool Serious { get; set; }
@@ -58,24 +58,24 @@ namespace DoomahLevelLoader
             StartCoroutine(LoadURL());
         }
 
-        public async void InstallButton(List<string> DownloadURLS, List<byte[]> DownloadHASH, TextMeshProUGUI InstallText, string Name)
+        public async void InstallButton(string[] DownloadURLS, string[] DownloadHASH, TextMeshProUGUI InstallText, string Name)
         {
             Count = 0;
             foreach (string DownloadURL in DownloadURLS)
             {
                 Count++;
                 string fileName = System.IO.Path.GetTempPath() + name + ".doomah.part" + Count;
-                await StartDownload(DownloadURL, fileName, InstallText, Count, DownloadURLS.Count);
+                await StartDownload(DownloadURL, fileName, InstallText, Count, DownloadURLS.Length);
                 if (File.Exists(fileName))
                 {
                     using (var md5 = MD5.Create())
                     {
                         using (var stream = File.OpenRead(fileName))
                         {
-                            byte[] Hash = md5.ComputeHash(stream);
+                            string Hash = BitConverter.ToString(md5.ComputeHash(stream)).Replace("-", ""); //unconfirmed if it works, its from https://stackoverflow.com/questions/2435695/converting-a-md5-hash-byte-array-to-a-string
                             if (Hash != DownloadHASH[Count - 1])
                             {
-                                Debug.LogError("Invalid hash, cancelling download.");
+                                Debugger.LogWarn("Invalid hash, cancelling download.");
                             }
                             else
                             {
@@ -86,7 +86,7 @@ namespace DoomahLevelLoader
                 }
                 else
                 {
-                    Debug.LogError("Downloaded file does not exist!");
+                    Debugger.LogError("Downloaded file does not exist!");
                     return;
                 }
             }
@@ -113,7 +113,7 @@ namespace DoomahLevelLoader
 
         }
 
-            public void AboutButton(string Name, string Description)
+        public void AboutButton(string Name, string Description)
         {
             if (LevelPopUp)
             {
@@ -133,7 +133,7 @@ namespace DoomahLevelLoader
 
                 if (webRequest.isNetworkError || webRequest.isHttpError)
                 {
-                    Debug.LogError("Failed to fetch Level List: " + webRequest.error);
+                    Debugger.LogError("Failed to fetch Level List: " + webRequest.error);
                     urlLoadResult = null;
                 }
                 else
@@ -170,7 +170,7 @@ namespace DoomahLevelLoader
 
                     if (webRequest.isNetworkError || webRequest.isHttpError)
                     {
-                        Debug.LogError("Failed to fetch Level List: " + webRequest.error);
+                        Debugger.LogError("Failed to fetch Level List: " + webRequest.error);
                         urlLoadResult = null;
                     }
                     else
@@ -188,14 +188,14 @@ namespace DoomahLevelLoader
                     }
                     else
                     {
-                        UnityEngine.Debug.LogError($"Failed to load image for:" + parameter.Name);
+                        Debugger.LogError($"Failed to load image for:" + parameter.Name);
                     }
                 }
                 else
                 {
-                    Debug.Log("Failed to load image, skipping");
+                    Debugger.LogWarn("Failed to load image, skipping");
                 }
-                Debug.Log("Loaded " + parameter.Name + "!");
+                Debugger.Log("Loaded " + parameter.Name + "!");
             }
         }
     }

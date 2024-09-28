@@ -17,6 +17,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Publicize Include="Unity.TextMeshPro:TMPro.TMP_SpriteAsset.version" />
+		<Publicize Include="Unity.TextMeshPro:TMPro.TMP_SpriteAsset.spriteGlyphTable" />
+		<Publicize Include="Unity.TextMeshPro:TMPro.TMP_SpriteAsset.spriteCharacterTable" />
+		<Publicize Include="Unity.TextMeshPro:TMPro.TMP_SpriteAsset.spriteCharacterLookupTable" />
+	</ItemGroup>
+	
+	<ItemGroup>
 		<PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
 		<PackageReference Include="BepInEx.Core" Version="5.*" />
 		<PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
@@ -49,12 +56,6 @@
 	  <Reference Include="FbxBuildTestAssets">
 	    <HintPath>lib\FbxBuildTestAssets.dll</HintPath>
 	  </Reference>
-	  <Reference Include="Microsoft.CSharp">
-	    <HintPath>lib\Microsoft.CSharp.dll</HintPath>
-	  </Reference>
-	  <Reference Include="Mono.Posix">
-	    <HintPath>lib\Mono.Posix.dll</HintPath>
-	  </Reference>
 	  <Reference Include="Mono.Security">
 	    <HintPath>lib\Mono.Security.dll</HintPath>
 	  </Reference>
@@ -78,6 +79,27 @@
 	  </Reference>
 	  <Reference Include="plog.unity">
 	    <HintPath>lib\plog.unity.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System.Configuration">
+	    <HintPath>lib\System.Configuration.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System.Diagnostics.StackTrace">
+	    <HintPath>lib\System.Diagnostics.StackTrace.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System.EnterpriseServices">
+	    <HintPath>lib\System.EnterpriseServices.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System.Globalization.Extensions">
+	    <HintPath>lib\System.Globalization.Extensions.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System.Runtime.CompilerServices.Unsafe">
+	    <HintPath>lib\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System.ServiceModel.Internals">
+	    <HintPath>lib\System.ServiceModel.Internals.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System.Xml.XPath.XDocument">
+	    <HintPath>lib\System.Xml.XPath.XDocument.dll</HintPath>
 	  </Reference>
 	  <Reference Include="Unity.Addressables">
 	    <HintPath>lib\Unity.Addressables.dll</HintPath>

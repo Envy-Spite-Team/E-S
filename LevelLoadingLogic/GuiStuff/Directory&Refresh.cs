@@ -25,7 +25,7 @@ namespace DoomahLevelLoader
 
                     if (instance == null)
                     {
-                        UnityEngine.Debug.LogError("RefreshAndDirectory instance not found in the scene.");
+                        Debugger.LogError("RefreshAndDirectory instance not found in the scene.");
                     }
                 }
                 return instance;

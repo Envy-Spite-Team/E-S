@@ -17,7 +17,7 @@ namespace DoomahLevelLoader
                 {
                     if (stream == null)
                     {
-                        Debug.LogError("Resource 'terminal.bundle' not found in embedded resources.");
+                        Debugger.LogError("Resource 'terminal.bundle' not found in embedded resources.");
                         return null;
                     }
 
@@ -28,7 +28,7 @@ namespace DoomahLevelLoader
             }
             catch (Exception ex)
             {
-                Debug.LogError("Error loading terminal: " + ex.Message);
+                Debugger.LogError("Error loading terminal: " + ex.Message);
                 return null;
             }
         }

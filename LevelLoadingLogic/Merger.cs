@@ -48,7 +48,7 @@ namespace DoomahLevelLoader
                 foreach (var part in sortedParts)
                     File.Delete(part);
 
-                Debug.Log($"Merged and deleted parts for: {baseName}, created file: {baseName}.doomah");
+                Debugger.Log($"Merged and deleted parts for: {baseName}, created file: {baseName}.doomah");
             }
         }
     }

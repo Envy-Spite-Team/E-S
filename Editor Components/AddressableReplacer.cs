@@ -39,7 +39,7 @@ namespace DoomahLevelLoader.UnityComponents
             GameObject targetObject = Addressables.LoadAssetAsync<GameObject>(targetAddress).WaitForCompletion();
             if (targetObject == null)
             {
-                Debug.LogWarning($"Tried to load asset at address {targetAddress}, but it does not exist");
+                Debugger.LogWarn($"Tried to load asset at address {targetAddress}, but it does not exist");
                 enabled = false;
                 return;
             }

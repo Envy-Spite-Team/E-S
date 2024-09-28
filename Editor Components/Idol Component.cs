@@ -28,7 +28,7 @@ namespace DoomahLevelLoader.UnityComponents
             GameObject targetObject = Addressables.LoadAssetAsync<GameObject>("Assets/Prefabs/Enemies/Idol.prefab").WaitForCompletion();
             if (targetObject == null)
             {
-                Debug.LogWarning($"Tried to load asset, but it does not exist");
+                Debugger.LogWarn($"Tried to load asset, but it does not exist");
                 enabled = false;
                 return;
             }

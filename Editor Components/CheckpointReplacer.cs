@@ -11,7 +11,7 @@ namespace DoomahLevelLoader.UnityComponents
     {
         protected override void PostInstantiate(GameObject instantiatedObject)
         {
-            Debug.Log("Replacing checkpoint");
+            Debugger.Log("Replacing checkpoint");
 
             CheckPoint realCheckpoint = GetComponentInParent<CheckPoint>();
             CheckPoint templateCheckpoint = instantiatedObject.GetComponent<CheckPoint>();
@@ -21,7 +21,7 @@ namespace DoomahLevelLoader.UnityComponents
 
             foreach (Transform child in Enumerable.Range(0, instantiatedObject.transform.childCount).Select(i => instantiatedObject.transform.GetChild(i)).ToArray())
             {
-                Debug.Log(child.name);
+                Debugger.Log(child.name);
                 child.SetParent(transform.parent, true);
             }
 

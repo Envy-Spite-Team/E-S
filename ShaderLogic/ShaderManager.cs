@@ -11,6 +11,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.AddressableAssets.ResourceLocators;
 using UnityEngine.SceneManagement;
+using DoomahLevelLoader;
 
 public static class ShaderManager
 {
@@ -52,13 +53,13 @@ public static class ShaderManager
                 }
                 else
                 {
-                    Debug.LogError("Failed to load shader: " + shaderHandle.OperationException);
+                    Debugger.LogError("Failed to load shader: " + shaderHandle.OperationException);
                 }
             }
         }
         else
         {
-            Debug.LogError("Addressables initialization failed: " + handle.OperationException);
+            Debugger.LogError("Addressables initialization failed: " + handle.OperationException);
         }
     }
 
@@ -166,7 +167,7 @@ public static class ShaderManager
                     }
                     else
                     {
-                        Debug.LogWarning($"Duplicate shader name found: {shaderInfo.Name}");
+                        Debugger.LogWarn($"Duplicate shader name found: {shaderInfo.Name}");
                     }
                 }
             }

@@ -39,8 +39,8 @@ namespace DoomahLevelLoader
         {
             if (Plugin.IsCustomLevel)
             {
-				__instance.levelNumber = -1;
-				Debug.Log(__instance.levelNumber);
+                Debugger.Log($"Replacing {__instance.levelNumber} to -1");
+                __instance.levelNumber = -1;
             }
         }
     }

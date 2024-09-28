@@ -30,7 +30,7 @@ namespace DoomahLevelLoader.UnityComponents
             GameObject targetObject = Addressables.LoadAssetAsync<GameObject>("Assets/Prefabs/Levels/Special Rooms/FinalRoom.prefab").WaitForCompletion();
             if (targetObject == null)
             {
-                Debug.LogWarning($"Tried to load asset, but it does not exist");
+                Debugger.LogWarn($"Tried to load asset, but it does not exist");
                 enabled = false;
                 return;
             }
@@ -40,17 +40,17 @@ namespace DoomahLevelLoader.UnityComponents
             if (moveToParent)
                 instantiatedObject.transform.SetParent(transform.parent, true);
 
-            Debug.Log("FinalDoorFixer: Final door game object loaded successfully.");
+            Debugger.Log("FinalDoorFixer: Final door game object loaded successfully.");
 
             FinalDoor fdComponent = instantiatedObject.transform.Find("FinalDoor")?.GetComponent<FinalDoor>();
             if (fdComponent != null)
             {
                 FD = fdComponent;
-                Debug.Log("FinalDoorFixer: Final door component found successfully.");
+                Debugger.Log("FinalDoorFixer: Final door component found successfully.");
             }
             else
             {
-                Debug.LogWarning("FinalDoorFixer: Final door component not found.");
+                Debugger.LogWarn("FinalDoorFixer: Final door component not found.");
             }
 
             PostInstantiate(instantiatedObject);

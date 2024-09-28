@@ -136,6 +136,11 @@ namespace DoomahLevelLoader
                 instantiatedDebug.transform.localScale = new Vector3(2, 2, 2);
 
                 CheatsManager.Instance.RegisterCheat(ShowDebugInfoInstance, "Envy");
+                GameObject pt = GameObject.Find("/Canvas/Main Menu (1)/EnvyScreen(Clone)/PlayTab");
+                Debugger.Log($"ASJIKPOGJKDGJKDJ {pt}");
+                if (pt != null) {
+                    pt.transform.localScale *= 1.25f;
+                }
             }
             else
             {
@@ -173,7 +178,7 @@ namespace DoomahLevelLoader
             // i find it funny how your laptop broke right after saying that --thebluenebula
             if (envyScreenPrefab == null)
             {
-                Debug.LogError("EnvyScreen prefab not found in the terminal bundle.");
+                Debugger.LogError("EnvyScreen prefab not found in the terminal bundle.");
                 return;
             }
 

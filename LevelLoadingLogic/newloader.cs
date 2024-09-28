@@ -45,7 +45,7 @@ namespace DoomahLevelLoader
                 {
                     _ = LoadBundlesFromDoomah(file, fileIndex / 2, text); // SHUT THE FUCK UP!!!!! :fire: --thebluenebula
                     // i made it shut the fuck up lmao --triggered
-                    UnityEngine.Debug.Log(file + " loaded!");
+                    UnityEngine.Debug.Log(file + " loaded!"); //not debugger.log cuz i think its important --triggered
                     await Task.Delay(16);
                 }
                 catch (Exception e) { UnityEngine.Debug.LogError(file + " failed to load: " + e.ToString()); }
@@ -145,7 +145,7 @@ namespace DoomahLevelLoader
 
                     if (Loaderscene.loadedScripts.Contains(script))
                     {
-                        UnityEngine.Debug.Log("Envy: erm.. you already got loaded " + script);
+                        Debugger.Log("Envy: erm.. you already got loaded " + script);
                     }
                     else
                     {
@@ -154,7 +154,7 @@ namespace DoomahLevelLoader
                         {
                             Assembly.Load(scriptBytes);
                         }
-                        catch { UnityEngine.Debug.LogError("Script [" + script + "] failed to load, please make sure there is no errors within the script."); }
+                        catch { Debugger.LogError("Script [" + script + "] failed to load, please make sure there is no errors within the script."); }
                     }
                 }
             }
@@ -183,7 +183,7 @@ namespace DoomahLevelLoader
                 }
                 else
                 {
-                    UnityEngine.Debug.LogError("Failed to load level image properly.");
+                    Debugger.LogError("Failed to load level image properly.");
                     buttonScript.LevelImageButtonThing.color = Color.clear;
                 }
             }
@@ -281,7 +281,7 @@ namespace DoomahLevelLoader
                         }
                         else
                         {
-                            UnityEngine.Debug.LogError($"Failed to load image from path: {imagePath}");
+                            Debugger.LogError($"Failed to load image from path: {imagePath}");
                         }
                     }
                 }

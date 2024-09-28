@@ -28,7 +28,7 @@ namespace DoomahLevelLoader
 					instance = FindObjectOfType<ScriptWarningUI>();
 					if (instance == null)
 					{
-						Debug.LogError("EnvyScreen prefab not found or ScriptWarningUI instance not initialized.");
+						Debugger.LogError("EnvyScreen prefab not found or ScriptWarningUI instance not initialized.");
 						return null;
 					}
 				}
