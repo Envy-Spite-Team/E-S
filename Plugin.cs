@@ -12,6 +12,8 @@ using System.Reflection;
 using System.IO;
 using System.Net.Http;
 using TMPro;
+using Steamworks;
+using UnityEngine.UI;
 
 namespace DoomahLevelLoader
 {
@@ -19,6 +21,7 @@ namespace DoomahLevelLoader
     public class Plugin : BaseUnityPlugin
     {
         private AssetBundle terminal;
+        private AssetBundle envydl_debug;
         public static bool IsCustomLevel = false;
         private static Plugin _instance;
 
@@ -198,6 +201,32 @@ namespace DoomahLevelLoader
             instantiatedObject.transform.SetParent(canvasObject.transform, false);
             instantiatedObject.transform.localPosition = Vector3.zero;
             instantiatedObject.transform.localScale = new Vector3(1f, 1f, 1f);
+
+            if (SteamClient.SteamId.Value == 76561198275729385 || SteamClient.SteamId.Value == 76561199017586561) //doomah what the fuck is your stea- oh yeah... --triggered
+            {
+                envydl_debug = Loader.LoadEnvyDLDev();
+                GameObject menu = envydl_debug.LoadAsset<GameObject>("envy_dl_dev_menu.prefab");
+                GameObject menu_btn = envydl_debug.LoadAsset<GameObject>("envy_dl_debug.prefab");
+                if (menu == null)
+                { Debugger.LogError("envy_dl_dev_menu is null!"); return; }
+                if (menu_btn == null)
+                { Debugger.LogError("envy_dl_debug is null!"); return; }
+
+                menu = Instantiate(menu);
+                menu.transform.SetParent(canvasObject.transform, false);
+                menu.SetActive(false);
+
+                menu_btn = Instantiate(menu_btn);
+                menu_btn.transform.SetParent(canvasObject.transform, false);
+                menu_btn.SetActive(true);
+
+                menu_btn.GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    menu.SetActive(!menu.activeSelf);
+                });
+
+                menu.AddComponent<EnvyDownloaderMenu_DEBUG>().menuButton = menu_btn;
+            }
         }
     }
 }

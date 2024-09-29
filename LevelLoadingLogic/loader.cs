@@ -32,5 +32,30 @@ namespace DoomahLevelLoader
                 return null;
             }
         }
+        public static AssetBundle LoadEnvyDLDev()
+        {
+            try
+            {
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                string resourceName = "meshwhatever.envydl_devmode.bundle";
+                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (stream == null)
+                    {
+                        Debugger.LogError("Resource 'envydl_devmode.bundle' not found in embedded resources.");
+                        return null;
+                    }
+
+                    byte[] buffer = new byte[stream.Length];
+                    stream.Read(buffer, 0, buffer.Length);
+                    return AssetBundle.LoadFromMemory(buffer);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debugger.LogError("Error loading envydl_devmode: " + ex.Message);
+                return null;
+            }
+        }
     }
 }
