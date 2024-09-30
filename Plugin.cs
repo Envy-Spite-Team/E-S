@@ -96,15 +96,29 @@ namespace DoomahLevelLoader
             SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
 
+        void Update() //this should fix the envy button not appearing sometimes --triggered
+        {
+            if(!hasMadeEnvyScreen)
+            {
+                bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
+                bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
+
+                if (isNotBootstrapOrIntro)
+                    InstantiateEnvyScreen(isMainMenu);
+            }
+        }
+
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
         }
 
+        static bool hasMadeEnvyScreen = false;
         static ShowDebugInfo ShowDebugInfoInstance = new ShowDebugInfo();
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            hasMadeEnvyScreen = false;
             bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
             bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
 
@@ -201,10 +215,17 @@ namespace DoomahLevelLoader
             instantiatedObject.transform.SetParent(canvasObject.transform, false);
             instantiatedObject.transform.localPosition = Vector3.zero;
             instantiatedObject.transform.localScale = new Vector3(1f, 1f, 1f);
+            Transform play = instantiatedObject.transform.Find("PlayTab");
+            Transform brows = instantiatedObject.transform.Find("BrowseTab");
+            play.localScale *= 1.35f;
+            brows.localScale *= 1.35f;
+
+            hasMadeEnvyScreen = true;
 
             if (SteamClient.SteamId.Value == 76561198275729385 || SteamClient.SteamId.Value == 76561199017586561) //doomah what the fuck is your stea- oh yeah... --triggered
             {
-                envydl_debug = Loader.LoadEnvyDLDev();
+                if(envydl_debug == null)
+                    envydl_debug = Loader.LoadEnvyDLDev();
                 GameObject menu = envydl_debug.LoadAsset<GameObject>("envy_dl_dev_menu.prefab");
                 GameObject menu_btn = envydl_debug.LoadAsset<GameObject>("envy_dl_debug.prefab");
                 if (menu == null)
