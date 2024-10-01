@@ -41,9 +41,6 @@ namespace DoomahLevelLoader
         // Represents an emoji character
         private class EmojiAsset
         {
-            // Edit emoji character size from here
-            public const float EMOJI_SCALE = 2;
-
             public List<EmojiTexture> originalTextures { get; private set; } // Emoji texture or frames
             public string originalName { get; private set; } // Name of the emoji based on the tag
             public uint idStart { get; private set; } // Id of the first texture on sprite atlas
@@ -97,12 +94,12 @@ namespace DoomahLevelLoader
                 int height = emoji.height;
 
                 Sprite sprite = Sprite.Create(spriteAtlas, new Rect(x, y, width, height), new Vector2(0.5f, 0.5f));
-
+                
                 TMP_SpriteGlyph glyph = new TMP_SpriteGlyph();
                 glyph.index = emoji.id;
                 glyph.atlasIndex = (int)emoji.id;
                 glyph.sprite = sprite;
-                glyph.metrics = new GlyphMetrics(width, height, 0, 0, width);
+                glyph.metrics = new GlyphMetrics(100, 100, -50, 100, 0);
                 glyph.glyphRect = new GlyphRect(x, y, width, height);
                 glyph.scale = 1f;
                 glyph.atlasIndex = 0;
@@ -112,7 +109,7 @@ namespace DoomahLevelLoader
                 character.glyphIndex = emoji.id;
                 character.unicode = 65534u;
                 character.name = originalName;
-                character.scale = EMOJI_SCALE;
+                character.scale = 1;
 
                 glyphs[emojiIndex] = glyph;
                 characters[emojiIndex] = character;
@@ -271,6 +268,24 @@ namespace DoomahLevelLoader
 
             private static Dictionary<string, EmojiAsset> emojiTextures = new Dictionary<string, EmojiAsset>();
             public static TMP_SpriteAsset currentEmojiAtlas { get; private set; } = null;
+
+            /*
+             * Emoji atlas is a single texture containing all the emoji images
+             * and frames. It can be at most 4096x4096 because of the dimension
+             * constraints put by unity (need to confirm it, may be larger).
+             * When the atlas is created, each emoji texture is put from left
+             * bottom corner to the right upper corner. Atlas will have the minimum
+             * possible size to ensure minimum processing time/memory consumption.
+             * 
+             * Since atlas has a limited size, it can fit limited number of emojis.
+             * If the atlas is 4096x4096 and each emoji is 128x128, it can fit
+             * at most (4096x4096)/(128x128) = 1024 emojis. If we increase emoji
+             * quality to 256, this number drops to 256. It may seem like a lot,
+             * but a typical animated gif may contain 70 frames.
+             * 
+             * Make sure dimensions are powers of 2 to ensure all the possible space
+             * is used in the atlas.
+             */
 
             // Emoji atlas constraints, edit quality from here
             public const int EMOJI_ATLAS_MAX_WIDTH = 4096;
