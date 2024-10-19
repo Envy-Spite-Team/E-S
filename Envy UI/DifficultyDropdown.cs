@@ -9,7 +9,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace EnvyLevelLoader.Envy_UI
+namespace EnvyLevelLoader.UI
 {
     [RequireComponent(typeof(TMP_Dropdown))]
     public class DifficultyDropdown : MonoBehaviour

@@ -1,5 +1,4 @@
-﻿using EnvyLevelLoader.Envy_UI;
-using EnvyLevelLoader.Loaders;
+﻿using EnvyLevelLoader.Loaders;
 using EnvyLevelLoader.Parsers;
 using System;
 using System.Collections;
@@ -11,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.UI.Extensions;
 using static Mono.Security.X509.X520;
 
@@ -123,6 +123,9 @@ namespace EnvyLevelLoader.UI
 
             if (blocker)
                 Destroy(blockerGO);
+
+            //TODO: add a script for this
+            MOTDManager.LoadMOTD(GameObject.Find("Canvas/Main Menu (1)/EnvyLoader(Clone)/LevelsTab/MOTD/VeryEpicCoolMOTDMsgThisNameIsVerySpecificSoICanFindIt").GetComponent<TextMeshProUGUI>(), new GameObject().AddComponent<Image>());
         }
 
         void Start()

@@ -11,7 +11,7 @@ using BepInEx;
 using Newtonsoft.Json;
 using System;
 
-namespace EnvyLevelLoader
+namespace EnvyLevelLoader.UI
 {
     public static class MOTDManager
     {
@@ -544,12 +544,11 @@ namespace EnvyLevelLoader
                 yield return webRequest.SendWebRequest();
 
                 if (webRequest.isNetworkError || webRequest.isHttpError)
-                {
                     Debugger.LogError("Failed to fetch MOTD: " + webRequest.error);
-                }
                 else
                 {
                     string motdRawText = webRequest.downloadHandler.text;
+                    Debugger.LogError("Fetched MOTD: " + motdRawText);
                     if (!string.IsNullOrEmpty(motdRawText))
                     {
                         motdText.text = "Loading...";

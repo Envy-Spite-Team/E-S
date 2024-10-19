@@ -1,10 +1,15 @@
 ﻿using BepInEx;
 using EnvyLevelLoader.Loaders;
+using EnvyLevelLoader.UI;
 using HarmonyLib;
+using Steamworks;
+using Steamworks.Data;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -40,9 +45,6 @@ namespace EnvyLevelLoader
                 if (isNotBootstrapOrIntro)
                     ShaderManager.CreateShaderDictionary();
 
-                if(isMainMenu && false)
-                    LevelLoader.LoadLevel(LevelLoader.GetLevelFromFile("C:\\Users\\Leo\\AppData\\Roaming\\r2modmanPlus-local\\ULTRAKILL\\profiles\\envydev\\BepInEx\\config\\EnvyLevels\\ub_templeoftime.doomah"), EnvyUtility.UnknownScene);
-
                 if (ShaderManager.shaderDictionary.Count <= 0)
                     StartCoroutine(ShaderManager.LoadShadersAsync());
 
@@ -51,7 +53,7 @@ namespace EnvyLevelLoader
 
                 GameObject target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "Main Menu (1)");
 
-                if(target == null)
+                if (target == null)
                     target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "PauseMenu");
 
                 if (target == null)
@@ -62,5 +64,19 @@ namespace EnvyLevelLoader
             };
             Harmony.PatchAll();
         }
+
+        public async Task GetTicket() //TODO : use this for custom leaderboards
+        {
+            NetIdentity id = new Steamworks.Data.NetIdentity();
+            AuthTicket _ticketTask = await SteamUser.GetAuthSessionTicketAsync(id);
+
+            byte[] zba = _ticketTask.Data;
+            StringBuilder hex = new StringBuilder(zba.Length * 2);
+            foreach (byte b in zba)
+            {
+                hex.AppendFormat("{0:x2}", b);
+            }
+        }
+
     }
 }

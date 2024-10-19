@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 
-namespace EnvyLevelLoader.Envy_UI
+namespace EnvyLevelLoader.UI
 {
     public class DynamicGridLayout : MonoBehaviour
     {

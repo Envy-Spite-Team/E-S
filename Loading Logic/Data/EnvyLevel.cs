@@ -21,6 +21,9 @@ namespace EnvyLevelLoader.Loaders
         {
             [SerializeField]
             public string SceneName;
+            [SerializeField]
+            public string Name; //thanks doomah
+
             [NonSerialized]
             public Texture2D Thumbnail;
             [SerializeField]

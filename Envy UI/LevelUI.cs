@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
 
-namespace EnvyLevelLoader.Envy_UI
+namespace EnvyLevelLoader.UI
 {
     [RequireComponent(typeof(Button))]
     public class LevelUI : MonoBehaviour

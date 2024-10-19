@@ -38,7 +38,7 @@ namespace EnvyLevelLoader.Loaders
         public static bool LoadLevel(EnvyLevel levelTarget, string targetScene = "")
         {
             if (CurrentLevel != null)
-                CurrentLevel.LoadedBundle.Unload(true);
+                CurrentLevel.LoadedBundle.Unload(false);
 
             if (string.IsNullOrEmpty(targetScene))
                 targetScene = EnvyUtility.UnknownScene;
@@ -51,6 +51,7 @@ namespace EnvyLevelLoader.Loaders
                 targetScene = levelTarget.LoadedBundle.GetAllScenePaths().FirstOrDefault();
 
             IsCustomLevel = true;
+            CurrentLevel = levelTarget;
 
             SceneManager.LoadSceneAsync(targetScene).completed += op =>
             {
