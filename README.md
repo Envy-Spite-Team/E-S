@@ -1,3 +1,7 @@
+# hi hello yes
+I know this is marked as a "rewrite" but i used alotta of doomahs code and just cleaned it into this format.
+I made sure to use asmuch of the previous code as possible but just cleaner to avoid work being wasted!
+
 # Envy & Spite
 The Offical Envy Level Loader repo.
 

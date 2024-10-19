@@ -2,7 +2,7 @@
 using UnityEngine.AddressableAssets;
 using System;
 
-namespace DoomahLevelLoader.UnityComponents
+namespace EnvyLevelLoader.UnityComponents
 {
     public class FinalDoorFixer : MonoBehaviour
     {

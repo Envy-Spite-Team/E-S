@@ -7,28 +7,12 @@ using System.Reflection;
 using HarmonyLib;
 using Logic;
 using System.Collections;
+using EnvyLevelLoader.Loaders;
+using UnityEngine.AddressableAssets;
+using System;
 
-namespace DoomahLevelLoader
+namespace EnvyLevelLoader
 {
-    [HarmonyPatch(typeof(SceneHelper), "RestartScene")]
-    public static class SceneHelper_RestartScene_Patch
-    {
-        [HarmonyPrefix]
-        public static bool Prefix()
-        {
-		if (Plugin.IsCustomLevel)
-		{
-			SceneManager.LoadSceneAsync(Loaderscene.currentLevelpath).completed += operation =>
-			{
-			    SceneHelper.DismissBlockers();
-			    Plugin.Fixorsmth();
-			};
-			return false;
-		}
-		return true;
-	}
-    }
-
 
     [HarmonyPatch(typeof(StatsManager))]
 	[HarmonyPatch("Start")]
@@ -37,7 +21,7 @@ namespace DoomahLevelLoader
         [HarmonyPostfix]
         static void Postfix(StatsManager __instance)
         {
-            if (Plugin.IsCustomLevel)
+            if (LevelLoader.IsCustomLevel)
             {
                 Debugger.Log($"Replacing {__instance.levelNumber} to -1");
                 __instance.levelNumber = -1;
@@ -45,24 +29,13 @@ namespace DoomahLevelLoader
         }
     }
 
-    [HarmonyPatch(typeof(LevelNameFinder))]
-	[HarmonyPatch("OnEnable")]
-	public static class LevelNameFinder_Patch
-	{
-		static void Postfix(LevelNameFinder __instance)
-		{
-            // why ignore whitespace brah
-			if (Plugin.IsCustomLevel) __instance.txt2.text = Loaderscene.currentLevelName;
-        }
-	}
-
     [HarmonyPatch(typeof(FinalRank))]
     [HarmonyPatch("LevelChange")]
     public static class FinalRank_Patch
     {
         static void Prefix(FinalRank __instance)
         {
-            if (Plugin.IsCustomLevel && string.IsNullOrEmpty(__instance.targetLevelName))
+            if (LevelLoader.IsCustomLevel && string.IsNullOrEmpty(__instance.targetLevelName))
                 __instance.targetLevelName = "Main Menu";
         }
     }
@@ -74,7 +47,7 @@ namespace DoomahLevelLoader
         static bool Prefix(AdvancedOptions __instance)
         {
             //oh hell naw
-            return !Plugin.IsCustomLevel;
+            return !LevelLoader.IsCustomLevel;
         }
     }
 
@@ -89,14 +62,14 @@ namespace DoomahLevelLoader
         static IEnumerator waitForCustom(MusicManager __instance)
         {
             yield return new WaitForSeconds(0.25f);
-            if (!Plugin.IsCustomLevel) yield break;
+            if (!LevelLoader.IsCustomLevel) yield break;
 
             try // just incase someones level is setup weird
             {
-                __instance.battleTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
-                __instance.bossTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
-                __instance.cleanTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
-                __instance.targetTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
+                __instance.battleTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
+                __instance.bossTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
+                __instance.cleanTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
+                __instance.targetTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
             }
             catch { }
 
@@ -105,9 +78,96 @@ namespace DoomahLevelLoader
                 try
                 {
                     if (audio.outputAudioMixerGroup.audioMixer.name == "MusicAudio" || audio.outputAudioMixerGroup.audioMixer.name == "MusicAudio_0")
-                        audio.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.instance.musicGroup;
+                        audio.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
                 } catch { }
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(Material))]
+    static class MaterialPatches
+    {
+        public static void Process(Material material)
+        {
+            if (material.shader == null)
+                return;
+
+            if (!ShaderManager.shaderDictionary.TryGetValue(material.shader.name, out Shader realShader))
+                return;
+
+            if (material.shader == realShader)
+                return;
+
+            material.shader = realShader;
+        }
+
+        [HarmonyPatch(MethodType.Constructor, new Type[] { typeof(Shader) })]
+        [HarmonyPostfix]
+        public static void CtorPatch1(Material __instance)
+        {
+            Process(__instance);
+        }
+
+        [HarmonyPatch(MethodType.Constructor, new Type[] { typeof(Material) })]
+        [HarmonyPostfix]
+        public static void CtorPatch2(Material __instance)
+        {
+            Process(__instance);
+        }
+
+        [HarmonyPatch(MethodType.Constructor, new Type[] { typeof(string) })]
+        [HarmonyPostfix]
+        public static void CtorPatch3(Material __instance)
+        {
+            Process(__instance);
+        }
+    }
+
+    [HarmonyPatch]
+    public static class AddressablesScene_Patch
+    {
+        [HarmonyPatch(typeof(Addressables), nameof(Addressables.LoadSceneAsync),
+            new Type[] { typeof(object), typeof(LoadSceneMode), typeof(bool), typeof(int) })]
+        [HarmonyPrefix]
+        public static bool Prefix_Overload1(object key, LoadSceneMode loadMode, bool activateOnLoad, int priority)
+        {
+            return PrefixCommon(key, new LoadSceneParameters(loadMode), activateOnLoad, priority);
+        }
+
+        [HarmonyPatch(typeof(Addressables), nameof(Addressables.LoadSceneAsync),
+            new Type[] { typeof(object), typeof(LoadSceneParameters), typeof(bool), typeof(int) })]
+        [HarmonyPrefix]
+        public static bool Prefix_Overload2(object key, LoadSceneParameters loadSceneParameters, bool activateOnLoad, int priority)
+        {
+            return PrefixCommon(key, loadSceneParameters, activateOnLoad, priority);
+        }
+
+        public static bool PrefixCommon(object key, LoadSceneParameters loadSceneParameters, bool activateOnLoad, int priority)
+        {
+            Debugger.Log($"Harmony patch: Loading scene with key: {key}, loadMode: {loadSceneParameters.loadSceneMode}");
+
+            string key_str = key.ToString();
+            if (!key_str.StartsWith(EnvyUtility.EnvyScenePrefix))
+                return true;
+
+            try
+            {
+                string query = key_str.Substring(EnvyUtility.EnvyScenePrefix.Length);
+                // querys work as [file name]>[scene name]
+                Debugger.Log($"Got envy level query as {query}");
+
+                string[] file_and_scene = query.Split('>');
+                string fileName = file_and_scene[0];
+                string sceneName = file_and_scene[1];
+
+                EnvyLevel level = LevelLoader.GetLevelFromFile(Path.Combine(EnvyUtility.ConfigPath, fileName));
+                if (level != null)
+                    LevelLoader.LoadLevel(level, sceneName);
+            }
+            catch (Exception e)
+            { Debugger.LogError($"Failed to load level {key} because {e.Message}"); }
+
+            return false;
         }
     }
 }

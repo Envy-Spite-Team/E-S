@@ -4,8 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using EnvyLevelLoader;
 
-namespace DoomahLevelLoader.UnityComponents
+namespace EnvyLevelLoader.UnityComponents
 {
     public class CheckpointReplacer : AddressableReplacer
     {

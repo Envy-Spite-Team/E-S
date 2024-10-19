@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.AddressableAssets;
 using System;
+using EnvyLevelLoader;
 
-namespace DoomahLevelLoader.UnityComponents
+namespace EnvyLevelLoader.UnityComponents
 {
     public class IdolAssigner : MonoBehaviour
     {

@@ -6,11 +6,14 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace DoomahLevelLoader
+namespace EnvyLevelLoader
 {
+    /// <summary>
+    /// Class to merge .x.part files.
+    /// </summary>
     public static class Merger
     {
-        private static string PartsPath => Plugin.getConfigPath();
+        private static string PartsPath => EnvyUtility.ConfigPath;
 
         public static async Task MergeFiles()
         {

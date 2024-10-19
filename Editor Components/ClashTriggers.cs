@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System;
 
-namespace DoomahLevelLoader.UnityComponents
+namespace EnvyLevelLoader.UnityComponents
 {
 	public class ClashTriggerDisable : MonoBehaviour
 	{

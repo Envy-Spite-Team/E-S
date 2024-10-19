@@ -11,7 +11,7 @@ using BepInEx;
 using Newtonsoft.Json;
 using System;
 
-namespace DoomahLevelLoader
+namespace EnvyLevelLoader
 {
     public static class MOTDManager
     {
