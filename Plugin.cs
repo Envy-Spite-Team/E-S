@@ -33,6 +33,7 @@ namespace EnvyLevelLoader
 
         private void Awake()
         {
+            EnvyUtility.CaptureMainThread();
             Instance = this;
 
             menu = ResourceLoader.GetBundle("envymenu");
@@ -47,6 +48,24 @@ namespace EnvyLevelLoader
 
                 if (ShaderManager.shaderDictionary.Count <= 0)
                     StartCoroutine(ShaderManager.LoadShadersAsync());
+
+                //testing code
+                if(isMainMenu)
+                {
+                    Debugger.Log("Loading envy user! " + SceneHelper.CurrentScene);
+                    EnvyUser user = new EnvyUser(76561197960435530);
+                    Task.Run(async () =>
+                    {
+                        Debugger.Log("Waiting for user.HasLoaded");
+                        while (!user.HasLoaded)
+                            await Task.Yield();
+                        Debugger.Log("EnvyUser loaded! " + user.HasLoaded.ToString());
+
+                        //debug shit
+                        GameObject checkThisInUnityExplorer = new GameObject($"hello i am unique: {user.UserID} : {user.UserName} : {user.Avatar == null} : {user.HasLoaded}");
+                        checkThisInUnityExplorer.AddComponent<UnityEngine.UI.RawImage>().texture = user.Avatar;
+                    });
+                }
 
                 if (menuPrefab == null)
                 { Debugger.LogWarn("menuPrefab is null"); return; }

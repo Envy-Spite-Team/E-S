@@ -160,6 +160,9 @@ namespace EnvyLevelLoader
                 string fileName = file_and_scene[0];
                 string sceneName = file_and_scene[1];
 
+                if (fileName == "?")
+                    { LevelLoader.LoadLevel(LevelLoader.CurrentLevel, sceneName); return false; }
+
                 EnvyLevel level = LevelLoader.GetLevelFromFile(Path.Combine(EnvyUtility.ConfigPath, fileName));
                 if (level != null)
                     LevelLoader.LoadLevel(level, sceneName);

@@ -8,21 +8,35 @@ namespace EnvyLevelLoader
     /// Used to log stuff that should only be logged in a developer environment.
     /// </summary>
     public static class Debugger {
+
+        // funny story, i spent ages figuring out why logging wasnt working
+        // until i found out debug.logs only work on main thread
+        // which is why EnvyUtility.RunOnMainThread is a thing now
+
         public static void Log(object message)
         {
 #if DEBUG
+            if(!EnvyUtility.IsMainThread)
+            { EnvyUtility.RunOnMainThread(() => Debug.Log(message)); }
+
             Debug.Log(message);
 #endif
         }
         public static void LogWarn(object message)
         {
 #if DEBUG
+            if (!EnvyUtility.IsMainThread)
+            { EnvyUtility.RunOnMainThread(() => Debug.LogWarning(message)); }
+
             Debug.LogWarning(message);
 #endif
         }
         public static void LogError(object message)
         {
 #if DEBUG
+            if (!EnvyUtility.IsMainThread)
+            { EnvyUtility.RunOnMainThread(() => Debug.LogError(message)); }
+
             Debug.LogError(message);
 #endif
         }
