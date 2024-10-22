@@ -19,6 +19,7 @@ namespace EnvyLevelLoader.Loaders
     public static class LevelLoader
     {
         public static bool IsCustomLevel     { get; private set; }
+        public static bool IsOnlineLevel     { get; private set; }
         public static bool IsCampaginLevel   { get; private set; }
         public static EnvyLevel CurrentLevel { get; private set; }
 
@@ -50,6 +51,7 @@ namespace EnvyLevelLoader.Loaders
             if(targetScene == EnvyUtility.UnknownScene)
                 targetScene = levelTarget.LoadedBundle.GetAllScenePaths().FirstOrDefault();
 
+            IsOnlineLevel = false; // TODO : LINK TO ENVYDL
             IsCustomLevel = true;
             CurrentLevel = levelTarget;
 

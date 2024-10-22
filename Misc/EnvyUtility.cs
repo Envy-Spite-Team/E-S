@@ -179,6 +179,24 @@ namespace EnvyLevelLoader
             }
         }
 
+        public static async Task<string> GetLeaderboardsJson(string levelName)
+        {
+            Debugger.Log("GetLeaderboardsJson");
+            string url = EnvyUtility.EnvyLeaderboardsServer + "getLeaderboard/level=Greybox"; // TODO : unhard code this (its hard coded for testing)
+
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                Debugger.Log("SendWebRequest");
+                var operation = request.SendWebRequest();
+
+                while (!operation.isDone)
+                    await Task.Yield(); // Wait for the request to complete asynchronously
+
+                Debugger.Log("return request.downloadHandler.text");
+                return request.downloadHandler.text; // Return the JSON as a string
+            }
+        }
+
         public static async Task<Texture2D> GetTextureFromUrl(string url) // do i need a summary for this :sob:
         {
             using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
