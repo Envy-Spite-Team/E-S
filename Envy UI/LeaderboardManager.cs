@@ -8,16 +8,19 @@ using System.Threading.Tasks;
 using EnvyLevelLoader.UI;
 using UnityEngine.ProBuilder.MeshOperations;
 using System.Collections.Generic;
+using EnvyLevelLoader.Loaders;
 
 namespace EnvyLevelLoader
 {
-
+    // WHY THE FUCK ISNT THIS IN PATCHES RAHHHH (literally me who did that)
     [HarmonyPatch(typeof(FinalRank))]
     [HarmonyPatch("Appear")]
     public static class FinalRank_Leaderboard_Patch
     {
         static void Prefix(FinalRank __instance)
         {
+            if (!(LevelLoader.IsCustomLevel && LevelLoader.IsOnlineLevel)){ Debugger.Log("Not a custom/online level so not doing leaderboards"); return; }
+
             LevelEndLeaderboard lel = GameObject.FindObjectsOfTypeAll(typeof(LevelEndLeaderboard)).FirstOrDefault() as LevelEndLeaderboard;
             if (lel != null && lel.gameObject.scene == SceneManager.GetActiveScene())
             {

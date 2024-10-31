@@ -147,7 +147,7 @@ namespace EnvyLevelLoader
         /// <param name="parent">The parent transform with the child.</param>
         /// <param name="name">The childs name.</param>
         /// <returns>The child.</returns>
-        private static GameObject FindChildEvenIfDisabled(Transform parent, string  name)
+        private static GameObject FindChildEvenIfDisabled(Transform parent, string name)
         {
             foreach (Transform child in parent)
                 if (child.name == name)
@@ -182,7 +182,7 @@ namespace EnvyLevelLoader
         public static async Task<string> GetLeaderboardsJson(string levelName)
         {
             Debugger.Log("GetLeaderboardsJson");
-            string url = EnvyUtility.EnvyLeaderboardsServer + "getLeaderboard/level=Greybox"; // TODO : unhard code this (its hard coded for testing)
+            string url = EnvyUtility.EnvyLeaderboardsServer + $"getLeaderboard/level={levelName}"; // TODO : unhard code this (its hard coded for testing)
 
             using (UnityWebRequest request = UnityWebRequest.Get(url))
             {

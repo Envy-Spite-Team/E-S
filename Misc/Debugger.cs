@@ -17,7 +17,7 @@ namespace EnvyLevelLoader
         {
 #if DEBUG
             if(!EnvyUtility.IsMainThread)
-            { EnvyUtility.RunOnMainThread(() => Debug.Log(message)); }
+            { EnvyUtility.RunOnMainThread(() => Debug.Log(message)); return; }
 
             Debug.Log(message);
 #endif
@@ -26,7 +26,7 @@ namespace EnvyLevelLoader
         {
 #if DEBUG
             if (!EnvyUtility.IsMainThread)
-            { EnvyUtility.RunOnMainThread(() => Debug.LogWarning(message)); }
+            { EnvyUtility.RunOnMainThread(() => Debug.LogWarning(message)); return; }
 
             Debug.LogWarning(message);
 #endif
@@ -35,7 +35,7 @@ namespace EnvyLevelLoader
         {
 #if DEBUG
             if (!EnvyUtility.IsMainThread)
-            { EnvyUtility.RunOnMainThread(() => Debug.LogError(message)); }
+            { EnvyUtility.RunOnMainThread(() => Debug.LogError(message)); return; }
 
             Debug.LogError(message);
 #endif
@@ -45,7 +45,7 @@ namespace EnvyLevelLoader
         static Dictionary<string,int> line_debugger = new Dictionary<string,int>();
 #endif
         /// <summary>
-        /// Used as a quick and dirty way to log "lines" a function.
+        /// Used as a quick and dirty way to log "lines" of code.
         /// </summary>
         /// <param name="uuid_for_session">Used to keep track of how many times the function has been called, used to print the amount of times.</param>
         /// <param name="note">Gets tagged on at the end of the debug log.</param>
