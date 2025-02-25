@@ -39,11 +39,13 @@ namespace EnvyLevelLoader.UI
 
         public void Load(EnvyLevel targetLevel)
         {
+            Debugger.LogLine("Load_session", "a");
             IsCampagin = targetLevel.IsCampagin;
 
             Name.text = targetLevel.Name;
             Author.text = targetLevel.Author;
 
+            Debugger.LogLine("Load_session", "b");
             if (IsCampagin)
             {}
             else
@@ -52,6 +54,7 @@ namespace EnvyLevelLoader.UI
             ScriptsIcon.gameObject.SetActive(false);
             TargetLevel = targetLevel;
 
+            Debugger.LogLine("Load_session", "c");
             Debugger.Log($"{targetLevel.Name}'s key is {LevelLoader.GetLevelKey(targetLevel)}");
         }
     }

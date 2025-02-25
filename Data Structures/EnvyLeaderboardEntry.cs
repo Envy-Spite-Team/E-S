@@ -6,8 +6,6 @@ using UnityEngine;
 using EnvyLevelLoader;
 using UnityEngine.UI;
 using TMPro;
-using static Mono.Security.X509.X520;
-using static Vertx.Debugging.Shape;
 
 namespace EnvyLevelLoader.UI
 {

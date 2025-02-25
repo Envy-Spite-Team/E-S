@@ -1,5 +1,5 @@
-﻿using EnvyLevelLoader.Parsers;
-using System;
+﻿using System;
+using EnvyLevelLoader.Parsers;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.IO;
@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Linq.Expressions;
+using Object = System.Object;
 
 namespace EnvyLevelLoader.Loaders
 {
@@ -31,6 +32,8 @@ namespace EnvyLevelLoader.Loaders
             return $"{EnvyUtility.EnvyScenePrefix}{Path.GetFileName(level.FilePath)}>{sceneOverride}";
         }
 
+        public class Dummy : MonoBehaviour{}
+        
         /// <summary>
         /// Loads a EnvyLevel. Used internally, see GetLevelKey and Addressables.LoadSceneAsync for loading levels manually.
         /// </summary>
@@ -55,13 +58,26 @@ namespace EnvyLevelLoader.Loaders
             IsCustomLevel = true;
             CurrentLevel = levelTarget;
 
-            SceneManager.LoadSceneAsync(targetScene).completed += op =>
+            SceneManager.LoadSceneAsync(targetScene)!.completed += op =>
             {
                 SceneHelper.DismissBlockers();
+                
+                // fix ultrakill stuff
+                try
+                {
+                    StockMapInfo info = UnityEngine.Object.FindObjectOfType<StockMapInfo>();
+                    OnLevelStart onLevelStart = info.gameObject.AddComponent<OnLevelStart>();
+                    onLevelStart.onStart = new UltrakillEvent();
+                }catch(Exception){}
+                
+                // start appling shaders
+                var dummy = new GameObject("tmp").AddComponent<Dummy>();
+                Debug.Log(dummy);
+                dummy.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
+                
                 Camera mainCamera = Camera.main;
                 IsCustomLevel = true;
                 mainCamera.clearFlags = CameraClearFlags.Skybox;
-                Plugin.Instance.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
             };
 
             return true;

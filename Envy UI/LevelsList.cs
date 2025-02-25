@@ -11,8 +11,6 @@ using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.UI.Extensions;
-using static Mono.Security.X509.X520;
 
 namespace EnvyLevelLoader.UI
 {
@@ -32,11 +30,32 @@ namespace EnvyLevelLoader.UI
         /// <param name="level">The level to create a LevelUI from.</param>
         public void AddLevel(EnvyLevel level)
         {
-            GameObject newUIObject = GameObject.Instantiate(BaseUI.gameObject);
+            Debugger.LogLine("addlevel_session", "a");
+            if (BaseUI == null)
+            {
+                var uiObj = Plugin.menu.LoadAsset<GameObject>("LevelUI");
+                BaseUI = uiObj.GetComponent<LevelUI>();
+                if (BaseUI == null)
+                {
+                    BaseUI = uiObj.AddComponent<LevelUI>();
+                    BaseUI.Name = uiObj.transform.Find("Name").GetComponent<TextMeshProUGUI>();
+                    BaseUI.Author = uiObj.transform.Find("Author").GetComponent<TextMeshProUGUI>();
+                    BaseUI.RankIcon = uiObj.transform.Find("Rank Icon").GetComponentInChildren<RankIcon>();
+                    BaseUI.Thumbnail = uiObj.transform.Find("Image").GetComponent<RawImage>();
+                    BaseUI.LevelInfo = uiObj.transform.Find("Info").GetComponent<Button>();
+                    BaseUI.ScriptsIcon = uiObj.transform.Find("Scripts").GetComponent<Image>();
+                    
+                    Debugger.LogLine("addlevel_session", "b");
+                    Debugger.LogWarn("fucking level ui didn't load");
+                }
+            }
+            Debugger.LogLine("addlevel_session", "c");
+            GameObject newUIObject = GameObject.Instantiate(BaseUI.gameObject, Container.transform, false);
+            Debugger.LogLine("addlevel_session", "d");
             LevelUI levelUI = newUIObject.GetComponent<LevelUI>();
+            Debugger.LogLine("addlevel_session", "e");
             levelUI.Load(level);
-
-            newUIObject.transform.SetParent(Container.transform, false);
+            Debugger.LogLine("addlevel_session", "f");
 
             levels.Add(levelUI);
         }
@@ -125,7 +144,7 @@ namespace EnvyLevelLoader.UI
                 Destroy(blockerGO);
 
             //TODO: add a script for this
-            MOTDManager.LoadMOTD(GameObject.Find("Canvas/Main Menu (1)/EnvyLoader(Clone)/LevelsTab/MOTD/VeryEpicCoolMOTDMsgThisNameIsVerySpecificSoICanFindIt").GetComponent<TextMeshProUGUI>(), new GameObject().AddComponent<Image>());
+            MOTDManager.LoadMOTD(GameObject.Find("Canvas/Chapter Select/EnvyLoader(Clone)/LevelsTab/MOTD/VeryEpicCoolMOTDMsgThisNameIsVerySpecificSoICanFindIt").GetComponent<TextMeshProUGUI>(), new GameObject().AddComponent<Image>());
         }
 
         void Start()

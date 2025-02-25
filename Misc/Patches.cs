@@ -83,6 +83,26 @@ namespace EnvyLevelLoader
             }
         }
     }
+    
+    [HarmonyPatch(typeof(MusicManager))]
+    [HarmonyPatch("Update")]
+    public static class MusicMan_Patch2
+    {
+        static bool Prefix(MusicManager __instance)
+        {
+            if (__instance.targetTheme == null)
+            {
+                __instance.targetTheme = __instance.cleanTheme;
+                if (__instance.targetTheme == null)
+                    __instance.targetTheme = __instance.battleTheme;
+                if (__instance.targetTheme == null)
+                    __instance.targetTheme = __instance.bossTheme;
+                if (__instance.targetTheme == null)
+                    return false;
+            }
+            return true;
+        }
+    }
 
     [HarmonyPatch(typeof(Material))]
     static class MaterialPatches

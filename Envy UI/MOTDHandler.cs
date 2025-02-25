@@ -98,7 +98,7 @@ namespace EnvyLevelLoader.UI
 
                 Sprite sprite = Sprite.Create(spriteAtlas, new Rect(x, y, width, height), new Vector2(0.5f, 0.5f));
 
-                TMP_SpriteGlyph glyph = new TMP_SpriteGlyph();
+                /*TMP_SpriteGlyph glyph = new TMP_SpriteGlyph();
                 glyph.index = emoji.id;
                 glyph.atlasIndex = (int)emoji.id;
                 glyph.sprite = sprite;
@@ -115,7 +115,7 @@ namespace EnvyLevelLoader.UI
                 character.scale = EMOJI_SCALE;
 
                 glyphs[emojiIndex] = glyph;
-                characters[emojiIndex] = character;
+                characters[emojiIndex] = character;*/
             }
         }
 

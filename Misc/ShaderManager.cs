@@ -5,11 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using EnvyLevelLoader.Loaders;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.AddressableAssets.ResourceLocators;
+using UnityEngine.ResourceManagement.ResourceLocations;
 using UnityEngine.SceneManagement;
 
 namespace EnvyLevelLoader
@@ -18,51 +20,6 @@ namespace EnvyLevelLoader
     {
         public static Dictionary<string, Shader> shaderDictionary = new Dictionary<string, Shader>();
         private static HashSet<Material> modifiedMaterials = new HashSet<Material>();
-
-        public static IEnumerator LoadShadersAsync()
-        {
-            AsyncOperationHandle<IResourceLocator> handle = Addressables.InitializeAsync();
-            while (!handle.IsDone)
-            {
-                yield return null;
-            }
-
-            if (handle.Status == AsyncOperationStatus.Succeeded)
-            {
-                IResourceLocator locator = handle.Result;
-                foreach (string addressEntry in ((ResourceLocationMap)locator).Keys)
-                {
-                    if (!addressEntry.EndsWith(".shader"))
-                        continue;
-
-                    AsyncOperationHandle<Shader> shaderHandle = Addressables.LoadAssetAsync<Shader>(addressEntry);
-                    while (!shaderHandle.IsDone)
-                    {
-                        yield return null;
-                    }
-
-                    if (shaderHandle.Status == AsyncOperationStatus.Succeeded)
-                    {
-                        Shader ingameShader = shaderHandle.Result;
-                        if (ingameShader != null && ingameShader.name != "ULTRAKILL/PostProcessV2")
-                        {
-                            if (!shaderDictionary.ContainsKey(ingameShader.name))
-                            {
-                                shaderDictionary[ingameShader.name] = ingameShader;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Debugger.LogError("Failed to load shader: " + shaderHandle.OperationException);
-                    }
-                }
-            }
-            else
-            {
-                Debugger.LogError("Addressables initialization failed: " + handle.OperationException);
-            }
-        }
 
         public static string ModPath()
         {
@@ -104,6 +61,7 @@ namespace EnvyLevelLoader
                             continue;
                         }
 
+                        Debugger.Log($"Swapping shader {newMaterials[i].shader} with {realShader.name}");
                         newMaterials[i].shader = realShader;
                         modifiedMaterials.Add(sharedMat);
                     }
@@ -124,10 +82,50 @@ namespace EnvyLevelLoader
 
         public static void CreateShaderDictionary()
         {
+            Debugger.Log("building shader dictionary");
             shaderDictionary = new Dictionary<string, Shader>();
 
-            foreach (var shader in Resources.FindObjectsOfTypeAll<Shader>())
-                shaderDictionary[shader.name] = shader;
+            List<string> allShaders = new List<string>();
+            foreach (IResourceLocator resourceLocator in Addressables.ResourceLocators)
+            {
+                foreach (object obj in resourceLocator.Keys)
+                {
+                    IList<IResourceLocation> list;
+                    bool flag = resourceLocator.Locate(obj, typeof(object), out list);
+                    if (flag)
+                    {
+                        foreach (IResourceLocation resourceLocation in list)
+                        {
+                            if(Path.GetExtension(resourceLocation.PrimaryKey) != ".shader")
+                                continue;
+                            Debugger.Log("Loading " + resourceLocation.PrimaryKey + " as shader");
+                            allShaders.Add(resourceLocation.PrimaryKey);
+                        }
+                    }
+                }
+            }
+
+            Debugger.Log("Loading shaders please wait...");
+            new GameObject("tmp shader loader").AddComponent<LevelLoader.Dummy>().StartCoroutine(LoadShadersAsync(allShaders));
+        }
+
+        static IEnumerator LoadShadersAsync(List<string> allShaders)
+        {
+            foreach (var shaderKey in allShaders)
+            {
+                var req = Addressables.LoadAssetAsync<Shader>(shaderKey);
+                yield return req;
+                if (req.Status != AsyncOperationStatus.Succeeded)
+                {
+                    Debugger.LogError("Failed to load shader: " + shaderKey);
+                    continue;
+                }
+                Shader s = req.Result;
+                shaderDictionary[s.name] = s;
+                Debugger.Log("Got shader " + s.name);
+            }
+
+            Debugger.Log("Loaded shaders!");
         }
     }
 
