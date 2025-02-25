@@ -121,7 +121,12 @@ namespace EnvyLevelLoader.UI
             foreach (string file in filePaths)
             {
                 yield return new WaitForEndOfFrame();
-                EnvyLevel level = LevelLoader.GetLevelFromFile(file);
+                EnvyLevel level = null;
+                try
+                {
+                    level = LevelLoader.GetLevelFromFile(file);
+                }catch(Exception e){Debugger.LogWarn(e.Message);}
+                
                 string error = $"<color=green>{Path.GetFileName(file)}</color>";
 
                 if (level != null)

@@ -17,17 +17,22 @@ namespace EnvyLevelLoader.Parsers
         public static EnvyLevel ParseLevelInfo(ZipArchive archive)
         {
             ZipArchiveEntry infoTxtEntry = archive.GetEntry("info.txt");
+            EnvyLevel levelInfo = null;
             if (infoTxtEntry == null)
             {
-                Debug.LogError("info.txt not found in archive.");
-                return null;
+                Debug.LogWarning("info.txt not found in archive. Applying fake fix...");
+                levelInfo = new EnvyLevel();
+                levelInfo.Author = "Unknown Author";
+                levelInfo.Name = "Unknown Name";
+                levelInfo.IsCampagin = false; // Set to false by default
             }
-
-            EnvyLevel levelInfo = null;
-            using (var reader = new StreamReader(infoTxtEntry.Open()))
+            else
             {
-                string infoText = reader.ReadToEnd();
-                levelInfo = LoadFromText(infoText);
+                using (var reader = new StreamReader(infoTxtEntry.Open()))
+                {
+                    string infoText = reader.ReadToEnd();
+                    levelInfo = LoadFromText(infoText);
+                }
             }
 
             EnvyLevel.SubLevel level = new EnvyLevel.SubLevel();

@@ -50,6 +50,30 @@ namespace EnvyLevelLoader
             return !LevelLoader.IsCustomLevel;
         }
     }
+    
+    [HarmonyPatch(typeof(ShopZone))]
+    [HarmonyPatch("Start")]
+    public static class ShopReplacer_Patch
+    {
+        static bool Prefix(ShopZone __instance)
+        {
+            if (!LevelLoader.IsCustomLevel) return true;
+            if (__instance.tipOfTheDay == null) return true;
+            var music = __instance.gameObject.transform.Find("Jingle Music");
+            if (music == null)
+            {
+                Debugger.Log($"Found OLD shop ({__instance.gameObject.name}) ! Replacing it...");
+                var shop = Plugin.ShopTemp;
+                if (shop != null)
+                {
+                    UnityEngine.Object.Destroy(__instance.gameObject);
+                    var newShop = UnityEngine.Object.Instantiate(shop, __instance.transform.position, __instance.transform.rotation, __instance.transform.parent);
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
 
     [HarmonyPatch(typeof(MusicManager))]
     [HarmonyPatch("OnEnable")]
@@ -182,7 +206,7 @@ namespace EnvyLevelLoader
                 string sceneName = file_and_scene[1];
 
                 if (fileName == "?")
-                    { LevelLoader.LoadLevel(LevelLoader.CurrentLevel, sceneName); return false; }
+                { LevelLoader.LoadLevel(LevelLoader.CurrentLevel, sceneName); return false; }
 
                 EnvyLevel level = LevelLoader.GetLevelFromFile(Path.Combine(EnvyUtility.ConfigPath, fileName));
                 if (level != null)

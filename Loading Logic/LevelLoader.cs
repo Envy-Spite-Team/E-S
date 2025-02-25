@@ -54,7 +54,7 @@ namespace EnvyLevelLoader.Loaders
             if(targetScene == EnvyUtility.UnknownScene)
                 targetScene = levelTarget.LoadedBundle.GetAllScenePaths().FirstOrDefault();
 
-            IsOnlineLevel = true; // TODO : LINK TO ENVYDL
+            IsOnlineLevel = false; // TODO : LINK TO ENVYDL
             IsCustomLevel = true;
             CurrentLevel = levelTarget;
 
@@ -68,6 +68,9 @@ namespace EnvyLevelLoader.Loaders
                     StockMapInfo info = UnityEngine.Object.FindObjectOfType<StockMapInfo>();
                     OnLevelStart onLevelStart = info.gameObject.AddComponent<OnLevelStart>();
                     onLevelStart.onStart = new UltrakillEvent();
+                    onLevelStart.hideFogUntilStart = true;
+                    onLevelStart.fogHidden = false;
+                    RenderSettings.fog = true;
                 }catch(Exception){}
                 
                 // start appling shaders
@@ -101,8 +104,10 @@ namespace EnvyLevelLoader.Loaders
                 if (isDoomah)
                     level = DoomahParser.ParseLevelInfo(archive);
                 else
-                    EnvyParser.ParseLevelInfo(archive);
+                    level = EnvyParser.ParseLevelInfo(archive);
 
+                if(level == null) return null;
+                
                 foreach (ZipArchiveEntry e in archive.Entries)
                 {
                     if(Path.GetExtension(e.FullName) == ".bundle")
