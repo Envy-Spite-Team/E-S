@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using EnvyLevelLoader.Parsers;
 using System.Collections.Generic;
 using System.IO.Compression;
@@ -9,6 +10,9 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Linq.Expressions;
+using System.Threading;
+using EnvyLevelLoader.UI;
+using UnityEngine.UI;
 using Object = System.Object;
 
 namespace EnvyLevelLoader.Loaders
@@ -24,12 +28,14 @@ namespace EnvyLevelLoader.Loaders
         public static bool IsCampaginLevel   { get; private set; }
         public static EnvyLevel CurrentLevel { get; private set; }
 
+        public const char SplitChar = '~';
+        
         public static string GetLevelKey(EnvyLevel level, string sceneOverride = "")
         {
             if (string.IsNullOrEmpty(sceneOverride))
                 sceneOverride = EnvyUtility.UnknownScene;
 
-            return $"{EnvyUtility.EnvyScenePrefix}{Path.GetFileName(level.FilePath)}>{sceneOverride}";
+            return $"{EnvyUtility.EnvyScenePrefix}{Path.GetFileName(level.FilePath)}{SplitChar}{sceneOverride}";
         }
 
         public class Dummy : MonoBehaviour{}
@@ -58,7 +64,22 @@ namespace EnvyLevelLoader.Loaders
             IsCustomLevel = true;
             CurrentLevel = levelTarget;
 
-            SceneManager.LoadSceneAsync(targetScene)!.completed += op =>
+            var loadingScreenOG = Plugin.menu.LoadAsset<GameObject>("LoadingALevelBlocker");
+            LoadingLevelsBlocker info = null;
+            if (loadingScreenOG != null)
+            {
+                Debugger.Log("Loading loading screen...");
+                var canvasForEnvyInstance = UnityEngine.Object.Instantiate(Plugin.canvasForEnvy, null);
+                var loadingScreen = UnityEngine.Object.Instantiate(loadingScreenOG, canvasForEnvyInstance.transform);
+                loadingScreen.SetActive(true);
+                UnityEngine.Object.DontDestroyOnLoad(canvasForEnvyInstance);
+                info = loadingScreen.GetComponentInChildren<LoadingLevelsBlocker>();
+                Debugger.Log($"{loadingScreenOG} -> {loadingScreen} and {info}");
+            }
+            
+            var asyncOp = SceneManager.LoadSceneAsync(targetScene);
+            asyncOp!.allowSceneActivation = false;
+            asyncOp!.completed += op =>
             {
                 SceneHelper.DismissBlockers();
                 
@@ -66,24 +87,66 @@ namespace EnvyLevelLoader.Loaders
                 try
                 {
                     StockMapInfo info = UnityEngine.Object.FindObjectOfType<StockMapInfo>();
-                    OnLevelStart onLevelStart = info.gameObject.AddComponent<OnLevelStart>();
-                    onLevelStart.onStart = new UltrakillEvent();
-                    onLevelStart.hideFogUntilStart = true;
-                    onLevelStart.fogHidden = false;
-                    RenderSettings.fog = true;
+                    
+                    bool canOLS = true;
+                    foreach (OnLevelStart ols in Resources.FindObjectsOfTypeAll<OnLevelStart>())
+                    {
+                        if (ols.gameObject.scene == SceneManager.GetActiveScene())
+                        {
+                            canOLS = false;
+                        }
+                    }
+
+                    if (canOLS)
+                    {
+                        OnLevelStart onLevelStart = info.gameObject.AddComponent<OnLevelStart>();
+                        onLevelStart.onStart = new UltrakillEvent();
+                        onLevelStart.hideFogUntilStart = false;
+                        onLevelStart.fogHidden = false;
+                    }
                 }catch(Exception){}
                 
                 // start appling shaders
                 var dummy = new GameObject("tmp").AddComponent<Dummy>();
-                Debug.Log(dummy);
                 dummy.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
                 
                 Camera mainCamera = Camera.main;
                 IsCustomLevel = true;
-                mainCamera.clearFlags = CameraClearFlags.Skybox;
+                if(mainCamera != null)
+                    mainCamera.clearFlags = CameraClearFlags.Skybox;
             };
-
+            if (info != null)
+            {
+                info.StartCoroutine(INTERNAL_LoadingScreen(asyncOp, info));
+            }
+            else
+            {
+                asyncOp!.allowSceneActivation = true;
+            }
+            
             return true;
+        }
+
+        private const int loadingSize = 24;
+        static IEnumerator INTERNAL_LoadingScreen(AsyncOperation asyncOp, LoadingLevelsBlocker info)
+        {
+            while (asyncOp.progress < 0.899f)
+            {
+                yield return null;
+                info.Text.text = "[";
+                for (int i = 0; i < loadingSize * (asyncOp.progress+0.09f); i++)
+                {
+                    info.Text.text += "*";
+                }
+
+                for (int i = 0; i < loadingSize * (1 - (asyncOp.progress+0.09f)); i++)
+                {
+                    info.Text.text += "-";
+                }
+                info.Text.text += "]";
+            }
+            asyncOp.allowSceneActivation = true;
+            UnityEngine.Object.Destroy(info.GetComponentInParent<Transform>().gameObject, 0.125f);
         }
 
         /// <summary>

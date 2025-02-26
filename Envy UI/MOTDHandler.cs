@@ -531,7 +531,7 @@ namespace EnvyLevelLoader.UI
             }
         }
 
-        private const string motdUrl = "https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/refs/heads/emoji/MOTD.txt";
+        private const string motdUrl = "https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/refs/heads/main/MOTD.txt";
         private const string fallbackImageUrl = "https://raw.githubusercontent.com/SatisfiedBucket/EnvySpiteDownloader/main/image.png";
         private const string discordCdnBaseUrl = "https://cdn.discordapp.com/emojis/";
 

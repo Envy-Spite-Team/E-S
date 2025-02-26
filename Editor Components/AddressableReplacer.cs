@@ -26,7 +26,7 @@ namespace EnvyLevelLoader.UnityComponents
 
         private void OnEnable()
         {
-            Debugger.Log("HIIIIIIII SDASD ASD " + transform.name);
+            Debugger.Log("HIIIIIIII SDASD ASD " + transform.name + "-> " + targetAddress);
             Activate();
         }
 
@@ -34,69 +34,103 @@ namespace EnvyLevelLoader.UnityComponents
 
         public void Activate()
         {
-            Debugger.Log("HIIIIIIII SDASD ASD " + transform.name);
+            Debugger.Log("HIIIIIIII SDASD ASD " + transform.name + "-> " + targetAddress);
             if (oneTime && _activated)
                 return;
 
             _activated = true;
 
-            GameObject targetObject = Addressables.LoadAssetAsync<GameObject>(targetAddress).WaitForCompletion();
-            if (targetObject == null)
+            if (targetAddress == "FirstRoom" || targetAddress == "FirstRoom Player Only" || targetAddress == "Player_2" || targetAddress == "FirstRoom Spawner")
             {
-                Debugger.LogWarn($"Tried to load asset at address {targetAddress}, but it does not exist");
+                GameObject targetObject;
+                if (targetAddress == "FirstRoom" || targetAddress == "FirstRoom Spawner")
+                    targetObject = Plugin.FirstRoomTemp;
+                else if (targetAddress == "FirstRoom Player Only" || targetAddress == "Player_2")
+                    targetObject = Plugin.PlayerTemp;
+                else
+                {
+                    Debugger.LogError("Broken addressable specials wtf");
+                    return;
+                }
+                
+                GameObject instantiatedObject = Instantiate(targetObject, transform.position, transform.rotation, transform);
+                
+                if (moveToParent)
+                    instantiatedObject.transform.SetParent(transform.parent, true);
+
+                PostInstantiate(instantiatedObject);
+                
+                if (destroyThis)
+                {
+                    Destroy(gameObject);
+                    gameObject.SetActive(false);
+                }
+
                 enabled = false;
                 return;
             }
-
-            GameObject instantiatedObject = Instantiate(targetObject, transform.position, transform.rotation, transform);
-
-            eid = instantiatedObject.GetComponent<EnemyIdentifier>();
-
-            // If eid is still null, try getting the component from the first child
-            if (eid == null && instantiatedObject.transform.childCount > 0)
+            
+            var task = Addressables.LoadAssetAsync<GameObject>(targetAddress);
+            task.Completed += (a) =>
             {
-                eid = instantiatedObject.transform.GetChild(0).GetComponent<EnemyIdentifier>();
-            }
-
-            if (moveToParent)
-                instantiatedObject.transform.SetParent(transform.parent, true);
-
-            PostInstantiate(instantiatedObject);
-
-            if (eid != null && IsBoss)
-            {
-                BossHealthBar bossHealthBar = eid.gameObject.AddComponent<BossHealthBar>();
-                if (!string.IsNullOrEmpty(BossName))
+                GameObject targetObject = a.Result;
+                if (targetObject == null || a.Status != AsyncOperationStatus.Succeeded)
                 {
-                    bossHealthBar.bossName = BossName;
+                    Debugger.LogWarn($"Tried to load asset at address {targetAddress}, but it does not exist");
+                    enabled = false;
+                    return;
                 }
-            }
 
-            if (eid != null && IsSanded)
-                eid.Sandify(false);
+                GameObject instantiatedObject = Instantiate(targetObject, transform.position, transform.rotation, transform);
 
-            if (eid != null && IsPuppet)
-            {
-                eid.PuppetSpawn();
-                eid.puppet = true;
-            }
+                eid = instantiatedObject.GetComponent<EnemyIdentifier>();
 
-            if (eid != null && IsRadient)
-            {
-                eid.radianceTier = RadienceTier;
-                eid.healthBuffModifier = HealthTier;
-                eid.speedBuffModifier = SpeedTier;
-                eid.damageBuffModifier = DamageTier;
-                eid.BuffAll();
-            }
+                // If eid is still null, try getting the component from the first child
+                if (eid == null && instantiatedObject.transform.childCount > 0)
+                {
+                    eid = instantiatedObject.transform.GetChild(0).GetComponent<EnemyIdentifier>();
+                }
 
-            if (destroyThis)
-            {
-                Destroy(gameObject);
-                gameObject.SetActive(false);
-            }
+                if (moveToParent)
+                    instantiatedObject.transform.SetParent(transform.parent, true);
 
-            enabled = false;
+                PostInstantiate(instantiatedObject);
+
+                if (eid != null && IsBoss)
+                {
+                    BossHealthBar bossHealthBar = eid.gameObject.AddComponent<BossHealthBar>();
+                    if (!string.IsNullOrEmpty(BossName))
+                    {
+                        bossHealthBar.bossName = BossName;
+                    }
+                }
+
+                if (eid != null && IsSanded)
+                    eid.Sandify(false);
+
+                if (eid != null && IsPuppet)
+                {
+                    eid.PuppetSpawn();
+                    eid.puppet = true;
+                }
+
+                if (eid != null && IsRadient)
+                {
+                    eid.radianceTier = RadienceTier;
+                    eid.healthBuffModifier = HealthTier;
+                    eid.speedBuffModifier = SpeedTier;
+                    eid.damageBuffModifier = DamageTier;
+                    eid.BuffAll();
+                }
+
+                if (destroyThis)
+                {
+                    Destroy(gameObject);
+                    gameObject.SetActive(false);
+                }
+
+                enabled = false;
+            };
         }
         protected virtual void PostInstantiate(GameObject instantiatedObject) { }
     }

@@ -24,13 +24,35 @@ namespace EnvyLevelLoader.UI
 
         public bool AutoLoad = false;
 
+        private static List<EnvyLevel> loadedLevels = new List<EnvyLevel>();
+
+        private GameObject fakeEnvyLights;
+
+        public void Awake()
+        {
+            var coolLights = GameObject.Find("Pit (2)").transform.Find("Agony Lights").gameObject;
+            if(coolLights != null)
+                fakeEnvyLights = Instantiate(coolLights);
+        }
+
+        public void OnEnable()
+        {
+            if(fakeEnvyLights != null)
+                fakeEnvyLights.SetActive(true);
+        }
+
+        public void OnDisable()
+        {
+            if(fakeEnvyLights != null)
+                fakeEnvyLights.SetActive(false);
+        }
+
         /// <summary>
         /// Creates a LevelUI from an envy level then adds it to the level list.
         /// </summary>
         /// <param name="level">The level to create a LevelUI from.</param>
-        public void AddLevel(EnvyLevel level)
+        public void AddLevel(EnvyLevel level, bool alreadyLoaded = false)
         {
-            Debugger.LogLine("addlevel_session", "a");
             if (BaseUI == null)
             {
                 var uiObj = Plugin.menu.LoadAsset<GameObject>("LevelUI");
@@ -45,17 +67,14 @@ namespace EnvyLevelLoader.UI
                     BaseUI.LevelInfo = uiObj.transform.Find("Info").GetComponent<Button>();
                     BaseUI.ScriptsIcon = uiObj.transform.Find("Scripts").GetComponent<Image>();
                     
-                    Debugger.LogLine("addlevel_session", "b");
                     Debugger.LogWarn("fucking level ui didn't load");
                 }
             }
-            Debugger.LogLine("addlevel_session", "c");
             GameObject newUIObject = GameObject.Instantiate(BaseUI.gameObject, Container.transform, false);
-            Debugger.LogLine("addlevel_session", "d");
             LevelUI levelUI = newUIObject.GetComponent<LevelUI>();
-            Debugger.LogLine("addlevel_session", "e");
             levelUI.Load(level);
-            Debugger.LogLine("addlevel_session", "f");
+            if(!alreadyLoaded)
+                loadedLevels.Add(level);
 
             levels.Add(levelUI);
         }
@@ -73,17 +92,33 @@ namespace EnvyLevelLoader.UI
                     Destroy(levelUI.gameObject);
                 levels = new List<LevelUI>();
             }
-
+            
             if (!Directory.Exists(path))
                 Debugger.LogError($"Invalid path to load levels from (got {path})");
             
             StartCoroutine(LoadLevelsInternal(path, blocker));
         }
 
+        
         IEnumerator LoadLevelsInternal(string path, bool blocker)
         {
             string[] filePaths = Directory.GetFiles(path).Where((name) =>
             {
+                // check if level is already loaded before trying to load it again
+                foreach (var level in loadedLevels)
+                {
+                    if (Path.GetFileNameWithoutExtension(level.FilePath) == Path.GetFileNameWithoutExtension(path))
+                    {
+                        var newDate = File.GetLastWriteTime(level.FilePath);
+                        if (newDate == level.EditedDate)
+                        {
+                            // add the already loaded levels back into the ui
+                            AddLevel(level, true);
+                            Debugger.Log($"Skipping loading level {level.FilePath} because it wasn't changed since last load.");
+                            return false;
+                        }
+                    }
+                }
                 string ext = Path.GetExtension(name).ToLower();
                 return ext == ".doomah" || ext == ".envy";
             }).ToArray();
@@ -101,11 +136,11 @@ namespace EnvyLevelLoader.UI
                     blockerGO = Plugin.menu.LoadAsset("LoadingLevelsBlocker") as GameObject;
                     if (blockerGO == null)
                         throw new Exception("WHAT THE FUCK (invalid envymenu.bundle)");
-                    blockerGO = GameObject.Instantiate(blockerGO) as GameObject;
-                    Title = blockerGO.transform.Find("Title").GetComponent<TextMeshProUGUI>();
-                    Info = blockerGO.transform.Find("Info").GetComponent<TextMeshProUGUI>();
+                    blockerGO = GameObject.Instantiate(blockerGO, myCanvas.transform, false) as GameObject;
+                    LoadingLevelsBlocker blockerScript = blockerGO.GetComponent<LoadingLevelsBlocker>();
+                    Title = blockerScript.Title;
+                    Info = blockerScript.Text;
 
-                    blockerGO.transform.SetParent(myCanvas.transform, false);
                     blockerGO.SetActive(true);
                 }
             }
@@ -130,7 +165,10 @@ namespace EnvyLevelLoader.UI
                 string error = $"<color=green>{Path.GetFileName(file)}</color>";
 
                 if (level != null)
+                {
+                    level.EditedDate = File.GetLastWriteTime(file);
                     AddLevel(level);
+                }
                 else
                 {
                     error = $"<color=red>{Path.GetFileName(file)} failed to load due to invalid info.</color>";
@@ -144,18 +182,25 @@ namespace EnvyLevelLoader.UI
                 l++;
                 yield return new WaitForEndOfFrame();
             }
-
+            
             if (blocker)
                 Destroy(blockerGO);
-
-            //TODO: add a script for this
-            MOTDManager.LoadMOTD(GameObject.Find("Canvas/Chapter Select/EnvyLoader(Clone)/LevelsTab/MOTD/VeryEpicCoolMOTDMsgThisNameIsVerySpecificSoICanFindIt").GetComponent<TextMeshProUGUI>(), new GameObject().AddComponent<Image>());
+            
+            if(loadedLevels.Count != 0)
+                NoLevels.SetActive(false);
+            else
+                NoLevels.SetActive(true);
         }
 
         void Start()
         {
             if (AutoLoad)
                 LoadLevelsFrom(EnvyUtility.ConfigPath);
+        }
+
+        public void Refresh()
+        {
+            LoadLevelsFrom(EnvyUtility.ConfigPath);
         }
     }
 }

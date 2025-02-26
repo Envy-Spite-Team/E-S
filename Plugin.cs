@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace EnvyLevelLoader
@@ -29,7 +30,10 @@ namespace EnvyLevelLoader
 
         public static AssetBundle menu;
         public static GameObject menuPrefab;
+        public static GameObject iconPrefab;
+        public static GameObject canvasForEnvy;
         public static GameObject currentMenuInstance;
+        public static GameObject currentIconInstance;
 
         public static Plugin Instance { get; private set; }
 
@@ -53,7 +57,13 @@ namespace EnvyLevelLoader
             }
             Debugger.Log("____________________");
             
-            menuPrefab = menu.LoadAsset<GameObject>("EnvyLoader");
+            menuPrefab = menu.LoadAsset<GameObject>("EnvyMenu");
+            iconPrefab = menu.LoadAsset<GameObject>("EnvyIcon");
+            canvasForEnvy = menu.LoadAsset<GameObject>("CanvasForEnvy");
+            if (canvasForEnvy != null)
+            {
+                canvasForEnvy.GetComponentInChildren<Canvas>().sortingOrder = 9999;
+            }
             SceneManager.sceneLoaded += (Scene s, LoadSceneMode lcm) =>
             {
                 bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
@@ -101,6 +111,10 @@ namespace EnvyLevelLoader
 
                 if (menuPrefab == null)
                 { Debugger.LogWarn("menuPrefab is null"); return; }
+                if (iconPrefab == null)
+                { Debugger.LogWarn("iconPrefab is null"); return; }
+                if (canvasForEnvy == null)
+                { Debugger.LogWarn("canvasForEnvy is null"); return; }
 
                 GameObject target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "Chapter Select");
 
@@ -110,7 +124,17 @@ namespace EnvyLevelLoader
                 if (target == null)
                     return;
 
-                currentMenuInstance = GameObject.Instantiate(menuPrefab, target.transform, false);
+                var canvasForEnvyInstance = Instantiate(canvasForEnvy, null);
+                currentMenuInstance = GameObject.Instantiate(menuPrefab, canvasForEnvyInstance.transform, false);
+                currentMenuInstance.SetActive(false);
+                currentIconInstance = GameObject.Instantiate(iconPrefab, target.transform, false);
+                currentIconInstance.SetActive(true);
+                currentIconInstance.GetComponentInChildren<Button>().onClick = new Button.ButtonClickedEvent();
+                currentIconInstance.GetComponentInChildren<Button>().onClick.AddListener(() =>
+                {
+                    Debugger.Log("opening envy menu");
+                    currentMenuInstance.SetActive(true);
+                });
             };
             Harmony.PatchAll();
         }

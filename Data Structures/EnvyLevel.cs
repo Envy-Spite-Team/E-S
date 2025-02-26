@@ -52,5 +52,9 @@ namespace EnvyLevelLoader.Loaders
         public Texture2D CampaginThumbnail;
         [SerializeField]
         public string CampaginThumbnailPath;
+
+        // for checking if we should re-load the file
+        [NonSerialized]
+        public DateTime EditedDate = DateTime.Now;
     }
 }

@@ -58,7 +58,7 @@ namespace EnvyLevelLoader
         static bool Prefix(ShopZone __instance)
         {
             if (!LevelLoader.IsCustomLevel) return true;
-            if (__instance.tipOfTheDay == null) return true;
+            if (__instance.tipOfTheDay == null && __instance.gameObject.name.ToLower() != "shop") return true;
             var music = __instance.gameObject.transform.Find("Jingle Music");
             if (music == null)
             {
@@ -88,17 +88,23 @@ namespace EnvyLevelLoader
             yield return new WaitForSeconds(0.25f);
             if (!LevelLoader.IsCustomLevel) yield break;
 
-            try // just incase someones level is setup weird
-            {
-                __instance.battleTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
-                __instance.bossTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
-                __instance.cleanTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
-                __instance.targetTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup;
-            }
-            catch { }
+            // just incase someones level is setup weird
+            try
+            { __instance.cleanTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup; }catch { }
+            try
+            { __instance.battleTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup; }catch { }
+            try
+            { __instance.bossTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup; }catch { }
+            try
+            { __instance.targetTheme.outputAudioMixerGroup = MonoSingleton<AudioMixerController>.Instance.musicGroup; }catch { }
 
-            foreach (AudioSource audio in GameObject.FindObjectsOfTypeAll(typeof(AudioSource)))
+            Scene currentScene = SceneManager.GetActiveScene();
+            foreach (AudioSource audio in (AudioSource[])Resources.FindObjectsOfTypeAll(typeof(AudioSource)))
             {
+                if(audio.gameObject.scene != currentScene)
+                    continue;
+                if(audio.gameObject.scene.name != currentScene.name)
+                    continue;
                 try
                 {
                     if (audio.outputAudioMixerGroup.audioMixer.name == "MusicAudio" || audio.outputAudioMixerGroup.audioMixer.name == "MusicAudio_0")
@@ -198,10 +204,11 @@ namespace EnvyLevelLoader
             try
             {
                 string query = key_str.Substring(EnvyUtility.EnvyScenePrefix.Length);
-                // querys work as [file name]>[scene name]
+                // querys work as [file name]~[scene name]
+                // where ~ is LevelLoader.SplitChar
                 Debugger.Log($"Got envy level query as {query}");
 
-                string[] file_and_scene = query.Split('>');
+                string[] file_and_scene = query.Split(LevelLoader.SplitChar);
                 string fileName = file_and_scene[0];
                 string sceneName = file_and_scene[1];
 
