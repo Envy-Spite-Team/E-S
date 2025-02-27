@@ -25,7 +25,7 @@ namespace EnvyLevelLoader.Loaders
     /// </summary>
     public static class LevelLoader
     {
-        public static bool IsCustomLevel     { get; private set; }
+        public static bool IsCustomLevel     { get; internal set; }
         public static bool IsOnlineLevel     { get; private set; }
         public static bool IsCampaginLevel   { get; private set; }
         public static EnvyLevel CurrentLevel { get; private set; }

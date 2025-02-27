@@ -68,6 +68,12 @@ namespace EnvyLevelLoader
                 if (!Directory.Exists(EnvyUtility.ConfigPath))
                     Directory.CreateDirectory(EnvyUtility.ConfigPath);
                 
+                if (s.name != (LevelLoader.CurrentLevel?.Name ?? ""))
+                {
+                    LevelLoader.IsCustomLevel = false;
+                    Debug.Log("Not envy level");
+                }
+                
                 if (isMainMenu)
                 {
                     ShaderManager.CreateShaderDictionary();

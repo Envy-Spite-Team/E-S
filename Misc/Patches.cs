@@ -66,6 +66,12 @@ namespace EnvyLevelLoader
         [HarmonyPrefix]
         public static bool Prefix(ref RankData __result, out string path, int lvl = -1, bool returnNull = false)
         {
+            if (!(LevelLoader.IsCustomLevel && lvl == -1))
+            {
+                GameProgressSaver.PrepareFs();
+                path = GameProgressSaver.LevelProgressPath(lvl);
+                return true;
+            }
             path = "";
             __result = GetRank(out path, out bool didChange, lvl, returnNull);
             if (didChange)

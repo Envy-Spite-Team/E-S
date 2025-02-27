@@ -92,7 +92,7 @@ namespace EnvyLevelLoader.UI
                 circuitBackground.SetActive(enableCircuitBackground.isOn);
             if(messageOfTheDay.activeSelf != showMessageOfTheDay.isOn)
                 messageOfTheDay.SetActive(showMessageOfTheDay.isOn);
-            if(string.IsNullOrWhiteSpace(windowTitleInput.text))
+            if(string.IsNullOrEmpty(windowTitleInput.text))
                 windowTitleInput.text = defaultWindowTitle;
             
             SaveSettings();
