@@ -94,6 +94,8 @@ namespace EnvyLevelLoader.UI
                 messageOfTheDay.SetActive(showMessageOfTheDay.isOn);
             if(string.IsNullOrWhiteSpace(windowTitleInput.text))
                 windowTitleInput.text = defaultWindowTitle;
+            
+            SaveSettings();
         }
         
         public void OnEnable()

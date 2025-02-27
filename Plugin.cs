@@ -24,7 +24,7 @@ namespace EnvyLevelLoader
     {
         private const string modGUID = "envyandspite.ultrakill.envylevelloader";
         private const string modName = "envylevelloader";
-        private const string modVersion = "1.8.0";
+        private const string modVersion = "1.8.1";
 
         private static readonly Harmony Harmony = new Harmony(modGUID);
 
@@ -40,7 +40,7 @@ namespace EnvyLevelLoader
         private void Awake()
         {
             Instance = this;
-            Debugger.Log("Loading envy level loader...");
+            Debug.Log("Loading envy level loader...");
                 
             menu = ResourceLoader.GetBundle("envymenu");
             
@@ -65,6 +65,9 @@ namespace EnvyLevelLoader
                 bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
                 bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
 
+                if (!Directory.Exists(EnvyUtility.ConfigPath))
+                    Directory.CreateDirectory(EnvyUtility.ConfigPath);
+                
                 if (isMainMenu)
                 {
                     ShaderManager.CreateShaderDictionary();
@@ -121,7 +124,7 @@ namespace EnvyLevelLoader
                 }
             };
             Harmony.PatchAll();
-            Debugger.Log("Loaded envy level loader!");
+            Debug.Log("Loaded envy level loader!");
         }
 
         private void LoadEnvyMenu(GameObject target)

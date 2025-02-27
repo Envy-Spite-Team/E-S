@@ -26,7 +26,10 @@ namespace EnvyLevelLoader
             Debugger.Log($"Getting level path for {lvl} and is playing custom is {LevelLoader.IsCustomLevel} and level path as {LevelLoader.CurrentLevel}");
             if (LevelLoader.IsCustomLevel && lvl == -1)
             {
-                __result = Path.Combine(GameProgressSaver.SavePath, "Envy", $"lvl{Path.GetFileName(LevelLoader.CurrentLevel.FilePath)}progress.bepis");
+                if (!Directory.Exists(EnvyUtility.SaveFolderPath))
+                    Directory.CreateDirectory(EnvyUtility.SaveFolderPath);
+                
+                __result = Path.Combine(EnvyUtility.SaveFolderPath, $"lvl{Path.GetFileName(LevelLoader.CurrentLevel.FilePath)}progress.bepis");
                 Debugger.Log($"returning {__result}");
                 return false;
             }

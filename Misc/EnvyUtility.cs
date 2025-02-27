@@ -90,6 +90,12 @@ namespace EnvyLevelLoader
             private set { }
         }
 
+        public static string SaveFolderPath
+        {
+            get { return Path.Combine(GameProgressSaver.SavePath, "Envy"); }
+            private set { }
+        }
+
         /// <summary>
         /// Used to reference the first scene in a EnvyLevel
         /// (due to bundles not being loaded yet it is impossible to know what scenes are in the level's .bundle)

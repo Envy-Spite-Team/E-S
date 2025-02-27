@@ -38,6 +38,7 @@ namespace EnvyLevelLoader.UI
             });
         }
 
+        private bool _hasLoaded = false;
         public void Load(EnvyLevel targetLevel)
         {
             IsCampagin = targetLevel.IsCampagin;
@@ -67,10 +68,43 @@ namespace EnvyLevelLoader.UI
 
                     if(rankReal != -1)
                         RankIcon.SetRank(rankReal);
+                    else
+                    {
+                        RankIcon.SetRank(-1);
+                        RankIcon.mainRankLetter.text = "?";
+                    }
                 }
             }
             
+            _hasLoaded = true;
             Debugger.Log($"{targetLevel.Name}'s key is {LevelLoader.GetLevelKey(targetLevel)}");
+        }
+
+        public void OnEnable()
+        {
+            if (_hasLoaded)
+            {
+                if (RankIcon != null)
+                {
+                    int rankReal = -1;
+                    string savePath = Path.Combine(GameProgressSaver.SavePath, "Envy",
+                        $"lvl{Path.GetFileName(TargetLevel.FilePath)}progress.bepis");
+                    if (File.Exists(savePath))
+                    {
+                        RankData rd = GameProgressSaver.ReadFile(savePath) as RankData;
+                        // turns out the list of ranks where a list of each rank for its corresponding difficulty lmao
+                        rankReal = rd?.ranks[MonoSingleton<PrefsManager>.Instance.GetInt("difficulty")] ?? -1;
+
+                        if(rankReal != -1)
+                            RankIcon.SetRank(rankReal);
+                        else
+                        {
+                            RankIcon.SetRank(-1);
+                            RankIcon.mainRankLetter.text = "?";
+                        }
+                    }
+                }
+            }
         }
     }
 }
