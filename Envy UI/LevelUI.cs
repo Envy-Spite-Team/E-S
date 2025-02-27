@@ -62,14 +62,8 @@ namespace EnvyLevelLoader.UI
                 if (File.Exists(savePath))
                 {
                     RankData rd = GameProgressSaver.ReadFile(savePath) as RankData;
-                    if (rd?.ranks != null)
-                        foreach (var rank in rd.ranks)
-                        {
-                            if (rank > rankReal)
-                            {
-                                rankReal = rank;
-                            }
-                        }
+                    // turns out the list of ranks where a list of each rank for its corresponding difficulty lmao
+                    rankReal = rd?.ranks[MonoSingleton<PrefsManager>.Instance.GetInt("difficulty")] ?? -1;
 
                     if(rankReal != -1)
                         RankIcon.SetRank(rankReal);

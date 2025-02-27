@@ -64,13 +64,18 @@ namespace EnvyLevelLoader
         public static bool Prefix(ref RankData __result, out string path, int lvl = -1, bool returnNull = false)
         {
             path = "";
-            __result = GetRank(out path, lvl, returnNull);
+            __result = GetRank(out path, out bool didChange, lvl, returnNull);
+            if (didChange)
+            {
+                return false;
+            }
             return true;
         }
 
-        public static RankData GetRank(out string path, int lvl = -1, bool returnNull = false)
+        public static RankData GetRank(out string path, out bool didChange, int lvl = -1, bool returnNull = false)
         {
             Debugger.Log($"Getting level rank for {lvl} and is playing custom is {LevelLoader.IsCustomLevel} and level path as {LevelLoader.CurrentLevel}");
+            didChange = false;
             path = "";
             if (LevelLoader.IsCustomLevel && lvl == -1)
             {
@@ -82,6 +87,7 @@ namespace EnvyLevelLoader
                     result = (returnNull ? null : new RankData(MonoSingleton<StatsManager>.Instance));
                 }
                 Debugger.Log(result);
+                didChange = true;
                 return result;
             }
 
@@ -93,8 +99,8 @@ namespace EnvyLevelLoader
     }
     
     [HarmonyPatch(typeof(StatsManager))]
-	[HarmonyPatch("Start")]
-    public static class StatsManager_Start_Patch
+	[HarmonyPatch("Awake")]
+    public static class StatsManager_Awake_Patch
     {
         [HarmonyPostfix]
         static void Postfix(StatsManager __instance)
@@ -107,12 +113,12 @@ namespace EnvyLevelLoader
         }
     }
     
-    [HarmonyPatch(typeof(SceneHelper))]
+    /*[HarmonyPatch(typeof(SceneHelper))]
     [HarmonyPatch("GetLevelIndexAfterIntermission")]
     public static class SceneHelper_GetLevelIndexAfterIntermission_Patch
     {
         [HarmonyPostfix]
-        static void Postfix(StatsManager __instance, ref int? __result, string intermissionScene)
+        static bool Postfix(StatsManager __instance, ref int? __result, string intermissionScene)
         {
             if (LevelLoader.IsCustomLevel)
             {
@@ -121,7 +127,7 @@ namespace EnvyLevelLoader
                 __result = new int?(-1);
             }
         }
-    }
+    }*/
 
     [HarmonyPatch(typeof(ItemPlaceZone))]
     [HarmonyPatch("Awake")]
@@ -130,6 +136,8 @@ namespace EnvyLevelLoader
         [HarmonyPrefix]
         static void Prefix(ItemPlaceZone __instance)
         {
+            if(!LevelLoader.IsCustomLevel) return;
+            
             if (__instance.altarElements == null)
             {
                 __instance.altarElements = [];
@@ -144,6 +152,8 @@ namespace EnvyLevelLoader
         [HarmonyPrefix]
         static void Prefix(StatueFake __instance)
         {
+            if(!LevelLoader.IsCustomLevel) return;
+            
             __instance.transform.parent?.Find("StatueEnemy")?.gameObject.SetActive(true);
             __instance.transform.parent?.Find("StatueBoss")?.gameObject.SetActive(true);
             __instance.transform.parent?.GetComponentInChildren<StatueBoss>()?.gameObject.SetActive(true);
@@ -196,6 +206,7 @@ namespace EnvyLevelLoader
         static bool Prefix(ShopZone __instance)
         {
             if (!LevelLoader.IsCustomLevel) return true;
+            
             if (__instance.tipOfTheDay == null && __instance.gameObject.name.ToLower() != "shop") return true;
             var music = __instance.gameObject.transform.Find("Jingle Music");
             if (music == null)
