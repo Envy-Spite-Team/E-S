@@ -40,14 +40,15 @@ namespace EnvyLevelLoader
         private void Awake()
         {
             Instance = this;
-
+            Debugger.Log("Loading envy level loader...");
+                
             menu = ResourceLoader.GetBundle("envymenu");
             
             Debugger.Log("Testing bundle integrity...");
             Object[] bundleObjects = Plugin.menu.LoadAllAssets();
             foreach (Object obj in bundleObjects)
             {
-                Debug.Log($"Found {obj.name} [{obj.GetType().FullName}] in bundle {menu.name}.");
+                Debugger.Log($"Found {obj.name} [{obj.GetType().FullName}] in bundle {menu.name}.");
             }
             Debugger.Log("____________________");
             
@@ -120,6 +121,7 @@ namespace EnvyLevelLoader
                 }
             };
             Harmony.PatchAll();
+            Debugger.Log("Loaded envy level loader!");
         }
 
         private void LoadEnvyMenu(GameObject target)
