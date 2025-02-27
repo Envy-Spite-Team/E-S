@@ -10,10 +10,88 @@ using System.Collections;
 using EnvyLevelLoader.Loaders;
 using UnityEngine.AddressableAssets;
 using System;
+using EnvyLevelLoader.UI;
+using TMPro;
+using Object = UnityEngine.Object;
 
 namespace EnvyLevelLoader
 {
 
+    [HarmonyPatch(typeof(GameProgressSaver))]
+    [HarmonyPatch("LevelProgressPath")]
+    public static class LevelProgress_Patch
+    {
+        public static bool Prefix(ref string __result, int lvl)
+        {
+            Debugger.Log($"Getting level path for {lvl} and is playing custom is {LevelLoader.IsCustomLevel} and level path as {LevelLoader.CurrentLevel}");
+            if (LevelLoader.IsCustomLevel && lvl == -1)
+            {
+                __result = Path.Combine(GameProgressSaver.SavePath, "Envy", $"lvl{Path.GetFileName(LevelLoader.CurrentLevel.FilePath)}progress.bepis");
+                Debugger.Log($"returning {__result}");
+                return false;
+            }
+
+            return true;
+        }
+    }
+    
+    //AmbiguousMatchException: Ambiguous match found.
+    /*[HarmonyPatch(typeof(GameProgressSaver))]
+    [HarmonyPatch("GetRank")]
+    public static class GetRank_Patch2
+    {
+        public static bool Prefix(ref RankData __result, bool returnNull, int lvl = -1)
+        {
+            if(LevelLoader.IsCustomLevel && lvl == -1)
+            {
+                __result = GetRank_Patch.GetRank(out string path, lvl, returnNull);
+                return false;
+            }
+
+            return true;
+        }
+    }*/
+    
+    [HarmonyPatch]
+    public static class GetRank_Patch
+    {
+        [HarmonyTargetMethod]
+        public static MethodBase TargetMethod()
+        {
+            return AccessTools.Method(typeof(GameProgressSaver), "GetRankData", new[] { typeof(string).MakeByRefType(), typeof(int), typeof(bool) });
+        }
+        [HarmonyPrefix]
+        public static bool Prefix(ref RankData __result, out string path, int lvl = -1, bool returnNull = false)
+        {
+            path = "";
+            __result = GetRank(out path, lvl, returnNull);
+            return true;
+        }
+
+        public static RankData GetRank(out string path, int lvl = -1, bool returnNull = false)
+        {
+            Debugger.Log($"Getting level rank for {lvl} and is playing custom is {LevelLoader.IsCustomLevel} and level path as {LevelLoader.CurrentLevel}");
+            path = "";
+            if (LevelLoader.IsCustomLevel && lvl == -1)
+            {
+                GameProgressSaver.PrepareFs();
+                path = GameProgressSaver.LevelProgressPath(lvl);
+                RankData result;
+                if ((result = GameProgressSaver.ReadFile(path) as RankData) == null)
+                {
+                    result = (returnNull ? null : new RankData(MonoSingleton<StatsManager>.Instance));
+                }
+                Debugger.Log(result);
+                return result;
+            }
+
+            if (!returnNull)
+                return new RankData(MonoSingleton<StatsManager>.Instance);
+            
+            return null;
+        }
+    }
+    
     [HarmonyPatch(typeof(StatsManager))]
 	[HarmonyPatch("Start")]
     public static class StatsManager_Start_Patch
@@ -28,6 +106,50 @@ namespace EnvyLevelLoader
             }
         }
     }
+    
+    [HarmonyPatch(typeof(SceneHelper))]
+    [HarmonyPatch("GetLevelIndexAfterIntermission")]
+    public static class SceneHelper_GetLevelIndexAfterIntermission_Patch
+    {
+        [HarmonyPostfix]
+        static void Postfix(StatsManager __instance, ref int? __result, string intermissionScene)
+        {
+            if (LevelLoader.IsCustomLevel)
+            {
+                Debugger.Log($"Replacing {__instance.levelNumber} to -1");
+                __instance.levelNumber = -1;
+                __result = new int?(-1);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(ItemPlaceZone))]
+    [HarmonyPatch("Awake")]
+    public static class ItemPlaceZone_Patch
+    {
+        [HarmonyPrefix]
+        static void Prefix(ItemPlaceZone __instance)
+        {
+            if (__instance.altarElements == null)
+            {
+                __instance.altarElements = [];
+            }
+        }
+    }
+    
+    [HarmonyPatch(typeof(StatueFake))]
+    [HarmonyPatch("Done")]
+    public static class StatueFake_Patch
+    {
+        [HarmonyPrefix]
+        static void Prefix(StatueFake __instance)
+        {
+            __instance.transform.parent?.Find("StatueEnemy")?.gameObject.SetActive(true);
+            __instance.transform.parent?.Find("StatueBoss")?.gameObject.SetActive(true);
+            __instance.transform.parent?.GetComponentInChildren<StatueBoss>()?.gameObject.SetActive(true);
+            __instance.gameObject.SetActive(false);
+        }
+    }
 
     [HarmonyPatch(typeof(FinalRank))]
     [HarmonyPatch("LevelChange")]
@@ -35,8 +157,24 @@ namespace EnvyLevelLoader
     {
         static void Prefix(FinalRank __instance)
         {
-            if (LevelLoader.IsCustomLevel && string.IsNullOrEmpty(__instance.targetLevelName))
+            if (LevelLoader.IsCustomLevel && string.IsNullOrWhiteSpace(__instance.targetLevelName))
                 __instance.targetLevelName = "Main Menu";
+        }
+    }
+    
+    [HarmonyPatch(typeof(FinalRank))]
+    [HarmonyPatch("Start")]
+    public static class FinalRank_Patch_MN
+    {
+        static void Prefix(FinalRank __instance)
+        {
+            if(!LevelLoader.IsCustomLevel) return;
+
+            var lvlNameFinder = UnityEngine.Object.FindObjectOfType<LevelNameFinder>();
+            Debugger.Log($"{lvlNameFinder?.txt2} and {StockMapInfo.Instance?.levelName ?? "UNABLE TO FIND MISSION NAME"}");
+            lvlNameFinder!.txt2!.text = StockMapInfo.Instance?.levelName ?? "UNABLE TO FIND MISSION NAME";
+            lvlNameFinder!.enabled = false;
+            Object.DestroyImmediate(lvlNameFinder);
         }
     }
 
@@ -63,13 +201,61 @@ namespace EnvyLevelLoader
             if (music == null)
             {
                 Debugger.Log($"Found OLD shop ({__instance.gameObject.name}) ! Replacing it...");
-                var shop = Plugin.ShopTemp;
+                string oldTip = "The tip of the day could not be loaded.";
+                try
+                { // try to find totd
+                    var shopCanvas = __instance.transform?.Find("Canvas");
+                    var shopBorder = shopCanvas?.Find("Border");
+                    var tipOfTheDay1 = shopBorder?.Find("TipBox")?.Find("Panel")?.Find("Text")?.GetComponentInChildren<TextMeshProUGUI>();
+                    var tipOfTheDay2 = shopCanvas?.Find("TipBox")?.Find("Panel")?.Find("Text")?.GetComponentInChildren<TextMeshProUGUI>();
+                    var tipOfTheDay3 = shopBorder?.Find("TipBox")?.Find("Panel")?.Find("TipText")?.GetComponentInChildren<TextMeshProUGUI>();
+                    var tipOfTheDay4 = shopCanvas?.Find("TipBox")?.Find("Panel")?.Find("TipText")?.GetComponentInChildren<TextMeshProUGUI>();
+                    if(__instance.tipOfTheDay != null)
+                        oldTip = __instance.tipOfTheDay.text;
+                    
+                    if(tipOfTheDay1 != null)
+                        oldTip = tipOfTheDay1.text;
+                    if(tipOfTheDay2 != null)
+                        oldTip = tipOfTheDay2.text;
+                    if(tipOfTheDay3 != null)
+                        oldTip = tipOfTheDay3.text;
+                    if(tipOfTheDay4 != null)
+                        oldTip = tipOfTheDay4.text;
+                }catch(Exception){}
+                
+                StockMapInfo mapInfo = StockMapInfo.Instance;
+                if (mapInfo?.tipOfTheDay == null)
+                {
+                    mapInfo!.tipOfTheDay = ScriptableObject.CreateInstance<ScriptableObjects.TipOfTheDay>();
+                    mapInfo!.tipOfTheDay.tip = oldTip;
+                }
+                
+                var shop = ResourceLoader.LoadGameobjectAtAddress("Assets/Prefabs/Levels/Shop.prefab");
                 if (shop != null)
                 {
                     UnityEngine.Object.Destroy(__instance.gameObject);
                     var newShop = UnityEngine.Object.Instantiate(shop, __instance.transform.position, __instance.transform.rotation, __instance.transform.parent);
+                    ShopZone zone = newShop.GetComponentInChildren<ShopZone>();
+                    zone.tipOfTheDay.text = oldTip;
                     return false;
                 }
+            }
+            return true;
+        }
+    }
+    
+    
+    [HarmonyPatch(typeof(PlayerActivator))]
+    [HarmonyPatch("Activate")]
+    public static class PlayerActivator_Patch
+    {
+        static bool Prefix(PlayerActivator __instance)
+        {
+            if(!LevelLoader.IsCustomLevel) return true;
+            if (__instance.gameObject.transform.parent!.name.ToLower() == "firstroom player only")
+            {
+                __instance.activated = true;
+                return false;
             }
             return true;
         }
@@ -215,7 +401,15 @@ namespace EnvyLevelLoader
                 if (fileName == "?")
                 { LevelLoader.LoadLevel(LevelLoader.CurrentLevel, sceneName); return false; }
 
-                EnvyLevel level = LevelLoader.GetLevelFromFile(Path.Combine(EnvyUtility.ConfigPath, fileName));
+                EnvyLevel level = null;
+                foreach (var loadedLevel in LevelsList.LoadedLevels) // check if the level is already loaded somewhat
+                {
+                    if(Path.GetFileName(loadedLevel.FilePath) == Path.GetFileName(fileName))
+                        level = loadedLevel;
+                }
+                if (level == null)
+                    level = LevelLoader.GetLevelFromFile(Path.Combine(EnvyUtility.ConfigPath, fileName));
+                
                 if (level != null)
                     LevelLoader.LoadLevel(level, sceneName);
             }

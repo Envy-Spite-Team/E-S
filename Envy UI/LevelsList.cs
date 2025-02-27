@@ -8,8 +8,10 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EnvyLevelLoader.UnityComponents;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace EnvyLevelLoader.UI
@@ -25,14 +27,27 @@ namespace EnvyLevelLoader.UI
         public bool AutoLoad = false;
 
         private static List<EnvyLevel> loadedLevels = new List<EnvyLevel>();
+        public static List<EnvyLevel> LoadedLevels => loadedLevels;
 
         private GameObject fakeEnvyLights;
 
         public void Awake()
         {
-            var coolLights = GameObject.Find("Pit (2)").transform.Find("Agony Lights").gameObject;
+            var coolLights = GameObject.Find("Pit (2)")?.transform?.Find("Agony Lights")?.gameObject ?? null;
             if(coolLights != null)
                 fakeEnvyLights = Instantiate(coolLights);
+        }
+
+        public void Start()
+        {
+            if (AutoLoad)
+                LoadLevelsFrom(EnvyUtility.ConfigPath);
+        }
+
+        public void Update()
+        {
+            if(Keyboard.current?.escapeKey.wasPressedThisFrame ?? false)
+                this.gameObject.SetActive(false);
         }
 
         public void OnEnable()
@@ -51,7 +66,7 @@ namespace EnvyLevelLoader.UI
         /// Creates a LevelUI from an envy level then adds it to the level list.
         /// </summary>
         /// <param name="level">The level to create a LevelUI from.</param>
-        public void AddLevel(EnvyLevel level, bool alreadyLoaded = false)
+        public GameObject AddLevel(EnvyLevel level, bool alreadyLoaded = false)
         {
             if (BaseUI == null)
             {
@@ -77,6 +92,7 @@ namespace EnvyLevelLoader.UI
                 loadedLevels.Add(level);
 
             levels.Add(levelUI);
+            return newUIObject;
         }
 
         /// <summary>
@@ -102,23 +118,27 @@ namespace EnvyLevelLoader.UI
         
         IEnumerator LoadLevelsInternal(string path, bool blocker)
         {
+            List<GameObject> objectsToActivate = new List<GameObject>();
             string[] filePaths = Directory.GetFiles(path).Where((name) =>
             {
                 // check if level is already loaded before trying to load it again
                 foreach (var level in loadedLevels)
                 {
-                    if (Path.GetFileNameWithoutExtension(level.FilePath) == Path.GetFileNameWithoutExtension(path))
+                    if (Path.GetFileNameWithoutExtension(level.FilePath) == Path.GetFileNameWithoutExtension(name))
                     {
                         var newDate = File.GetLastWriteTime(level.FilePath);
                         if (newDate == level.EditedDate)
                         {
                             // add the already loaded levels back into the ui
-                            AddLevel(level, true);
+                            objectsToActivate.Add(AddLevel(level, true));
                             Debugger.Log($"Skipping loading level {level.FilePath} because it wasn't changed since last load.");
                             return false;
                         }
                     }
                 }
+                if(Path.GetFileName(name) == Path.GetFileName(EnvyUtility.CreditsLevelPath))
+                    return false;
+                
                 string ext = Path.GetExtension(name).ToLower();
                 return ext == ".doomah" || ext == ".envy";
             }).ToArray();
@@ -151,8 +171,8 @@ namespace EnvyLevelLoader.UI
                 Title.text = $"<b>Loading Levels 1/{filePaths.Length}</b>";
                 Info.text = "";
                 Info.autoSizeTextContainer = true;
-
             }
+            
             foreach (string file in filePaths)
             {
                 yield return new WaitForEndOfFrame();
@@ -167,7 +187,7 @@ namespace EnvyLevelLoader.UI
                 if (level != null)
                 {
                     level.EditedDate = File.GetLastWriteTime(file);
-                    AddLevel(level);
+                    objectsToActivate.Add(AddLevel(level));
                 }
                 else
                 {
@@ -187,17 +207,19 @@ namespace EnvyLevelLoader.UI
                 Destroy(blockerGO);
             
             if(loadedLevels.Count != 0)
+            {
                 NoLevels.SetActive(false);
+                if (Container.TryGetComponent<ObjectActivateInSequenceNoTimeScale>(
+                        out ObjectActivateInSequenceNoTimeScale activateInSequence))
+                {
+                    activateInSequence.objectsToActivate = objectsToActivate.ToArray();
+                    activateInSequence.coroutine = activateInSequence.StartCoroutine(activateInSequence.activationCoroutine());
+                }
+            }
             else
                 NoLevels.SetActive(true);
         }
-
-        void Start()
-        {
-            if (AutoLoad)
-                LoadLevelsFrom(EnvyUtility.ConfigPath);
-        }
-
+        
         public void Refresh()
         {
             LoadLevelsFrom(EnvyUtility.ConfigPath);

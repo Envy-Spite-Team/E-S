@@ -6,7 +6,7 @@ using System.Collections;
 using System.Linq;
 using EnvyLevelLoader;
 
-namespace EnvyLevelLoader.UnityComponents
+namespace DoomahLevelLoader.UnityComponents
 {
     public class CheckpointReplacer : AddressableReplacer
     {

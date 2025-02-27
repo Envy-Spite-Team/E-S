@@ -6,5 +6,5 @@ using UnityEngine.UI;
 
 namespace EnvyLevelLoader
 {
-    
+    public class SpiteHellmap : MonoBehaviour {} // TODO : finish
 }

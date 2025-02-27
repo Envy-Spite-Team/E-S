@@ -64,6 +64,14 @@ namespace EnvyLevelLoader
         {
             MainThreadDispatcher.RunOnMainThread(action);
         }
+        public static void RunOnMainThread(Action action, float delay)
+        {
+            Task.Run((async () =>
+            {
+                await Task.Delay((int)(delay*1000));
+                MainThreadDispatcher.RunOnMainThread(action);
+            }));
+        }
 
         public static string ConfigPath {
             get { return Path.Combine(Paths.ConfigPath + Path.DirectorySeparatorChar + "EnvyLevels"); }
@@ -73,6 +81,12 @@ namespace EnvyLevelLoader
         public static string PluginPath
         {
             get { return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location); }
+            private set { }
+        }
+
+        public static string CreditsLevelPath
+        {
+            get { return Path.Combine(EnvyUtility.ConfigPath, "creditslevel.donotdelete.doomah"); }
             private set { }
         }
 
@@ -92,10 +106,12 @@ namespace EnvyLevelLoader
         /// </summary>
         public static string EnvyLeaderboardsServer {
             get {
+                return "not implemented";
+                
                 if (File.Exists(Path.Combine(PluginPath, "override_server.txt")))
                     return File.ReadAllLines(Path.Combine(PluginPath, "override_server.txt"))[0];
 
-                return "https://poodle-informed-oddly.ngrok-free.app/"; // free services go brrrr
+                return "https://poodle-informed-oddly.ngrok-free.app/";
             }
             set { }
         }

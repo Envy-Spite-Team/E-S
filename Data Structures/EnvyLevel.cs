@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.ProBuilder;
 
 namespace EnvyLevelLoader.Loaders
 {
@@ -39,7 +42,37 @@ namespace EnvyLevelLoader.Loaders
         public string FilePath;
 
         [NonSerialized]
-        public byte[] BundleData;
+        private byte[] realBundleData = null;
+
+        public byte[] BundleData // don't load bundle data untill it is accessed
+        {
+            get
+            {
+                if (realBundleData == null)
+                {
+                    if (File.Exists(FilePath))
+                    {
+                        using (var archive = new ZipArchive(File.OpenRead(FilePath), ZipArchiveMode.Read))
+                        {
+                            foreach (ZipArchiveEntry e in archive.Entries)
+                            {
+                                if(Path.GetExtension(e.FullName) == ".bundle")
+                                {
+                                    Stream s = e.Open();
+                                    realBundleData = EnvyUtility.ReadFully(s);
+                                    s.Close();
+                                }
+                            }
+                        }
+                    }
+                }
+                return realBundleData;
+            }
+            set
+            {
+                realBundleData = value;
+            }
+        }
         [NonSerialized]
         public AssetBundle LoadedBundle;
 

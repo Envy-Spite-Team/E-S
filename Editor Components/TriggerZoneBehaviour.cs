@@ -47,7 +47,7 @@ public class TriggerZoneBehavior : MonoBehaviour
 					if (!ignoreList.Contains(child) && !child.name.Contains("Gore Zone") && !child.gameObject.activeSelf)
 					{
 						allChildrenActivated = false; 
-						if (child.name != null && (child.name != "NoPass(Clone)" || child.GetComponent<EnvyLevelLoader.UnityComponents.AddressableReplacer>() == null))
+						if (child.name != null && (child.name != "NoPass(Clone)" || child.GetComponent<DoomahLevelLoader.UnityComponents.AddressableReplacer>() == null))
 						{
 							yield return new WaitForSeconds(activationDelay);
 						}

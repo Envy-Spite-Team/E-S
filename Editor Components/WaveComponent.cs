@@ -45,7 +45,7 @@ public class WaveComponent : MonoBehaviour
 	{
 		foreach (Transform child in childrenToActivate)
 		{
-			if (child.name != "NoPass(Clone)" || child.GetComponent<EnvyLevelLoader.UnityComponents.AddressableReplacer>() == null)
+			if (child.name != "NoPass(Clone)" || child.GetComponent<DoomahLevelLoader.UnityComponents.AddressableReplacer>() == null)
 			{
 				child.gameObject.SetActive(true);
 				yield return new WaitForSeconds(activationDelay);

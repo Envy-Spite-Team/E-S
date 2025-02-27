@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
+using EnvyLevelLoader;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace EnvyLevelLoader.UnityComponents
+namespace DoomahLevelLoader.UnityComponents
 {
     public class TipOfTheDay : MonoBehaviour
     {
@@ -15,6 +16,13 @@ namespace EnvyLevelLoader.UnityComponents
 
         public async void Awake()
         {
+            StockMapInfo mapInfo = StockMapInfo.Instance;
+            if (mapInfo?.tipOfTheDay == null)
+            {
+                mapInfo!.tipOfTheDay = ScriptableObject.CreateInstance<ScriptableObjects.TipOfTheDay>();
+                mapInfo!.tipOfTheDay.tip = this.Tip;
+            }
+            
             await Task.Delay(150);
             try
             {
@@ -28,6 +36,15 @@ namespace EnvyLevelLoader.UnityComponents
 
             if (TipBox == null)
             {
+                ShopZone[] shopZones = GameObject.FindObjectsOfType<ShopZone>();
+                foreach (ShopZone shopZone in shopZones)
+                {
+                    if (shopZone.tipOfTheDay != null)
+                    {
+                        shopZone.tipOfTheDay.text = Tip;
+                    }
+                }
+                
                 Debugger.LogWarn("(TOTD) Temporary fix failed.");
             }
             else

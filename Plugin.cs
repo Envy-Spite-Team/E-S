@@ -24,7 +24,7 @@ namespace EnvyLevelLoader
     {
         private const string modGUID = "envyandspite.ultrakill.envylevelloader";
         private const string modName = "envylevelloader";
-        private const string modVersion = "2.0.0";
+        private const string modVersion = "1.8.0";
 
         private static readonly Harmony Harmony = new Harmony(modGUID);
 
@@ -36,15 +36,9 @@ namespace EnvyLevelLoader
         public static GameObject currentIconInstance;
 
         public static Plugin Instance { get; private set; }
-
-        public static GameObject FirstRoomTemp;
-        public static GameObject PlayerTemp;
-        public static GameObject ShopTemp;
-        public static GameObject FinalRoomTemp;
         
         private void Awake()
         {
-            EnvyUtility.CaptureMainThread();
             Instance = this;
 
             menu = ResourceLoader.GetBundle("envymenu");
@@ -66,47 +60,20 @@ namespace EnvyLevelLoader
             }
             SceneManager.sceneLoaded += (Scene s, LoadSceneMode lcm) =>
             {
+                EnvyUtility.CaptureMainThread();
                 bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
                 bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
 
                 if (isMainMenu)
                 {
                     ShaderManager.CreateShaderDictionary();
-                }
-
-                //testing code
-                if(isMainMenu)
-                {
-                    Debugger.Log("Loading envy user! " + SceneHelper.CurrentScene);
-                    EnvyUser user = new EnvyUser(76561197960435530);
-                    Task.Run(async () =>
-                    {
-                        Debugger.Log("Waiting for user.HasLoaded");
-                        while (!user.HasLoaded)
-                            await Task.Yield();
-                        Debugger.Log("EnvyUser loaded! " + user.HasLoaded.ToString());
-                    });
-
-                    Addressables.LoadAssetAsync<GameObject>("FirstRoom").Completed += handle =>
-                    {
-                        FirstRoomTemp = handle.Result;
-                        Debugger.Log("Got FirstRoom as " + handle.Result);
-                    };
-                    Addressables.LoadAssetAsync<GameObject>("FirstRoom Player Only").Completed += handle =>
-                    {
-                        PlayerTemp = handle.Result;
-                        Debugger.Log("Got FirstRoom Player Only as " + handle.Result);
-                    };
-                    Addressables.LoadAssetAsync<GameObject>("Assets/Prefabs/Levels/Shop.prefab").Completed += handle =>
-                    {
-                        ShopTemp = handle.Result;
-                        Debugger.Log("Got Assets/Prefabs/Levels/Shop.prefab Only as " + handle.Result);
-                    };
-                    Addressables.LoadAssetAsync<GameObject>("Assets/Prefabs/Levels/Special Rooms/FinalRoom.prefab").Completed += handle =>
-                    {
-                        FinalRoomTemp = handle.Result;
-                        Debugger.Log("Got Assets/Prefabs/Levels/Special Rooms/FinalRoom.prefab Only as " + handle.Result);
-                    };
+                    
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Player Only");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Prime");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Secret");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Shop.prefab");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Special Rooms/FinalRoom.prefab");
                 }
 
                 if (menuPrefab == null)
@@ -116,27 +83,49 @@ namespace EnvyLevelLoader
                 if (canvasForEnvy == null)
                 { Debugger.LogWarn("canvasForEnvy is null"); return; }
 
-                GameObject target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "Chapter Select");
-
-                if (target == null)
-                    target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "PauseMenu");
-
-                if (target == null)
-                    return;
-
-                var canvasForEnvyInstance = Instantiate(canvasForEnvy, null);
-                currentMenuInstance = GameObject.Instantiate(menuPrefab, canvasForEnvyInstance.transform, false);
-                currentMenuInstance.SetActive(false);
-                currentIconInstance = GameObject.Instantiate(iconPrefab, target.transform, false);
-                currentIconInstance.SetActive(true);
-                currentIconInstance.GetComponentInChildren<Button>().onClick = new Button.ButtonClickedEvent();
-                currentIconInstance.GetComponentInChildren<Button>().onClick.AddListener(() =>
+                if (isMainMenu)
                 {
-                    Debugger.Log("opening envy menu");
-                    currentMenuInstance.SetActive(true);
-                });
+                    GameObject target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "Chapter Select");
+                    LoadEnvyMenu(target);
+                }
+                else
+                {
+                    // delayed to let player to load in
+                    Action a = new Action(() => Debugger.LogError("Action a failed to setup??"));
+                    a = () =>
+                    {
+                        GameObject target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "PauseMenu");
+                        if (target == null)
+                        {
+                            EnvyUtility.RunOnMainThread(a, 0.25f);
+                        }
+
+                        LoadEnvyMenu(target);
+                    };
+                    EnvyUtility.RunOnMainThread(a, 0.25f);
+                }
             };
             Harmony.PatchAll();
+        }
+
+        private void LoadEnvyMenu(GameObject target)
+        {
+            if (target == null)
+            {
+                Debugger.LogWarn("target is null");
+                return;
+            }
+            var canvasForEnvyInstance = Instantiate(canvasForEnvy, null);
+            currentMenuInstance = GameObject.Instantiate(menuPrefab, canvasForEnvyInstance.transform, false);
+            currentMenuInstance.SetActive(false);
+            currentIconInstance = GameObject.Instantiate(iconPrefab, target.transform, false);
+            currentIconInstance.SetActive(true);
+            currentIconInstance.GetComponentInChildren<Button>().onClick = new Button.ButtonClickedEvent();
+            currentIconInstance.GetComponentInChildren<Button>().onClick.AddListener(() =>
+            {
+                Debugger.Log("opening envy menu");
+                currentMenuInstance.SetActive(true);
+            });
         }
 
         public async Task GetTicket() //TODO : use this for custom leaderboards

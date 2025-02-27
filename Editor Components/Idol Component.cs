@@ -3,7 +3,7 @@ using UnityEngine.AddressableAssets;
 using System;
 using EnvyLevelLoader;
 
-namespace EnvyLevelLoader.UnityComponents
+namespace DoomahLevelLoader.UnityComponents
 {
     public class IdolAssigner : MonoBehaviour
     {

@@ -12,6 +12,8 @@ using UnityEngine.SceneManagement;
 using System.Linq.Expressions;
 using System.Threading;
 using EnvyLevelLoader.UI;
+using TMPro;
+using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
 using Object = System.Object;
 
@@ -41,22 +43,49 @@ namespace EnvyLevelLoader.Loaders
         public class Dummy : MonoBehaviour{}
         
         /// <summary>
-        /// Loads a EnvyLevel. Used internally, see GetLevelKey and Addressables.LoadSceneAsync for loading levels manually.
+        /// Loads a EnvyLevel. Used internally, see <see cref="GetLevelKey"/> and <see cref="SceneHelper.LoadScene"/> for loading levels manually.
         /// </summary>
         /// <param name="levelTarget">The level to load.</param>
         /// <returns>If the level is a valid level.</returns>
         public static bool LoadLevel(EnvyLevel levelTarget, string targetScene = "")
         {
-            if (CurrentLevel != null)
-                CurrentLevel.LoadedBundle.Unload(false);
-
-            if (string.IsNullOrEmpty(targetScene))
+            if(levelTarget == null)
+                return false;
+            
+            if (string.IsNullOrWhiteSpace(targetScene))
                 targetScene = EnvyUtility.UnknownScene;
+            
+            // don't reload bundle if we are restarting level
+            bool canUnloadAndLoad = true;
+            if (CurrentLevel != null)
+            {
+                if (CurrentLevel.FilePath == levelTarget.FilePath)
+                {
+                    canUnloadAndLoad = false;
+                    if (levelTarget.LoadedBundle == null)
+                    {
+                        Debugger.Log("Fixing levelTarget's bundle to match the existing already loaded one...");
+                        levelTarget.LoadedBundle = CurrentLevel.LoadedBundle;
+                    }
+                }
+            }
+            
+            if(canUnloadAndLoad)
+            {
+                if (CurrentLevel != null)
+                    CurrentLevel?.LoadedBundle?.Unload(true);
+                if(levelTarget.LoadedBundle != null)
+                    levelTarget.LoadedBundle?.Unload(true);
+                levelTarget.LoadedBundle = AssetBundle.LoadFromMemory(levelTarget.BundleData);
+            }
+            else
+            {
+                Debugger.Log("Using already loaded level bundle...");
+            }
 
             Debugger.Log($"Loading envy level {levelTarget.Name} with scene {targetScene}");
 
-            levelTarget.LoadedBundle = AssetBundle.LoadFromMemory(levelTarget.BundleData);
-            Debugger.Log(levelTarget.LoadedBundle);
+            Debugger.Log("Got bundle as " + levelTarget.LoadedBundle);
             if(targetScene == EnvyUtility.UnknownScene)
                 targetScene = levelTarget.LoadedBundle.GetAllScenePaths().FirstOrDefault();
 
@@ -81,6 +110,7 @@ namespace EnvyLevelLoader.Loaders
             asyncOp!.allowSceneActivation = false;
             asyncOp!.completed += op =>
             {
+                IsCustomLevel = true;
                 SceneHelper.DismissBlockers();
                 
                 // fix ultrakill stuff
@@ -111,9 +141,34 @@ namespace EnvyLevelLoader.Loaders
                 dummy.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
                 
                 Camera mainCamera = Camera.main;
-                IsCustomLevel = true;
                 if(mainCamera != null)
                     mainCamera.clearFlags = CameraClearFlags.Skybox;
+
+                if (Path.GetFileName(levelTarget.FilePath) == Path.GetFileName(EnvyUtility.CreditsLevelPath))
+                {
+                    EnvyUtility.RunOnMainThread(() =>
+                    {
+                        Debugger.Log("Fixing credits level font....");
+                        // we are in credits level so lets fix the font rq
+                        Material fixedMaterial = Plugin.menu.LoadAsset<Material>("CreditsFontMaterial");
+                        fixedMaterial = UnityEngine.Object.Instantiate(fixedMaterial);
+                        TMP_FontAsset fixedFont = Plugin.menu.LoadAsset<TMP_FontAsset>("CreditsFontTMP");
+                        fixedFont = UnityEngine.Object.Instantiate(fixedFont);
+                        
+                        TextMeshProUGUI[] allText = Resources.FindObjectsOfTypeAll<TextMeshProUGUI>();
+                        Scene current = SceneManager.GetActiveScene();
+                        foreach (var text in allText)
+                        {
+                            if(text.gameObject.scene != current)
+                                continue;
+                            if(text.gameObject.scene.name != current.name)
+                                continue;
+                        
+                            text.material = fixedMaterial;
+                            text.font = fixedFont;
+                        }
+                    }, 0.125f);
+                }
             };
             if (info != null)
             {
@@ -132,6 +187,14 @@ namespace EnvyLevelLoader.Loaders
         {
             while (asyncOp.progress < 0.899f)
             {
+                if (MonoSingleton<OptionsManager>.Instance != null)
+                {
+                    if (!MonoSingleton<OptionsManager>.Instance.paused)
+                    {
+                        MonoSingleton<OptionsManager>.Instance.Pause();
+                        MonoSingleton<OptionsManager>.Instance.dontUnpause = true;
+                    }
+                }
                 yield return null;
                 info.Text.text = "[";
                 for (int i = 0; i < loadingSize * (asyncOp.progress+0.09f); i++)
@@ -170,16 +233,6 @@ namespace EnvyLevelLoader.Loaders
                     level = EnvyParser.ParseLevelInfo(archive);
 
                 if(level == null) return null;
-                
-                foreach (ZipArchiveEntry e in archive.Entries)
-                {
-                    if(Path.GetExtension(e.FullName) == ".bundle")
-                    {
-                        Stream s = e.Open();
-                        level.BundleData = EnvyUtility.ReadFully(s);
-                        s.Close();
-                    }
-                }
 
                 level.FilePath = path;
 

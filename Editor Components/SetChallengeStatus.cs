@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace EnvyLevelLoader
+namespace DoomahLevelLoader
 {
     public class SetChallengeStatus : MonoBehaviour
     {

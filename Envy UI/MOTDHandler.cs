@@ -548,12 +548,12 @@ namespace EnvyLevelLoader.UI
                 else
                 {
                     string motdRawText = webRequest.downloadHandler.text;
-                    Debugger.LogError("Fetched MOTD: " + motdRawText);
+                    Debugger.Log("Fetched MOTD: " + motdRawText);
                     if (!string.IsNullOrEmpty(motdRawText))
                     {
                         motdText.text = "Loading...";
 
-                        motdText.StartCoroutine(ConvertMarkdownToTMP($"<size=24>{motdRawText}</size>", motdText, (formattedText) =>
+                        motdText.StartCoroutine(ConvertMarkdownToTMP($"<size=16>{motdRawText}</size>", motdText, (formattedText) =>
                         {
                             motdText.text = formattedText;
                             motdImageComponent.gameObject.SetActive(false);

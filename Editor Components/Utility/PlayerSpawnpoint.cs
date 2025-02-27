@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using EnvyLevelLoader.Loaders;
 using UnityEngine.AddressableAssets;
 using UnityEngine;
 using UnityEngine.Events;
@@ -20,7 +21,7 @@ namespace EnvyLevelLoader
         public float antiHP = 0;
         void Awake()
         {
-            GameObject targetObject = Addressables.LoadAssetAsync<GameObject>("FirstRoom").WaitForCompletion();
+            GameObject targetObject = ResourceLoader.LoadGameobjectAtAddress("FirstRoom");
             targetObject = Instantiate(targetObject, transform.position, transform.rotation, transform);
             GameObject.Destroy(targetObject.transform.Find("Room").gameObject);
             plr = targetObject.transform.Find("Player");

@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace EnvyLevelLoader.Loaders
 {
@@ -42,6 +44,38 @@ namespace EnvyLevelLoader.Loaders
             {
                 Debugger.LogError($"Error loading {name}: " + ex.Message);
                 return null;
+            }
+        }
+
+        private static Dictionary<string, GameObject> _loadedObjects = new Dictionary<string, GameObject>();
+        public static void PreloadGameobjectAtAddressAsync(string address)
+        {
+            if (_loadedObjects.ContainsKey(address))
+            {
+                Debugger.LogWarn("Tried to preload already preloaded gameobject!");
+                return;
+            }
+            Addressables.LoadAssetAsync<GameObject>(address)!.Completed += (x) =>
+            {
+                if (x.Status == AsyncOperationStatus.Succeeded)
+                    _loadedObjects.Add(address, x.Result);
+            };
+        }
+
+        public static bool IsGameobjectPreloaded(string address)
+        {
+            return _loadedObjects.ContainsKey(address);
+        }
+        
+        public static GameObject LoadGameobjectAtAddress(string address)
+        {
+            if (_loadedObjects.ContainsKey(address))
+            {
+                return _loadedObjects[address];
+            }
+            else
+            {
+                return Addressables.LoadAssetAsync<GameObject>(address).WaitForCompletion();
             }
         }
     }

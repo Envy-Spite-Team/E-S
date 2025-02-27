@@ -80,9 +80,14 @@ namespace EnvyLevelLoader
             yield return null;
         }
 
-        public static void CreateShaderDictionary()
+        public static void CreateShaderDictionary(bool force = false)
         {
-            Debugger.Log("building shader dictionary");
+            if (shaderDictionary.Count > 1 && !force)
+            {
+                Debugger.LogWarn("A shader dictionary is already created.");
+                return;
+            }
+            Debugger.Log("Building shader dictionary...");
             shaderDictionary = new Dictionary<string, Shader>();
 
             List<string> allShaders = new List<string>();
