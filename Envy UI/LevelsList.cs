@@ -109,6 +109,9 @@ namespace EnvyLevelLoader.UI
                 levels = new List<LevelUI>();
             }
             
+            if (!Directory.Exists(EnvyUtility.ConfigPath))
+                Directory.CreateDirectory(EnvyUtility.ConfigPath);
+            
             if (!Directory.Exists(path))
                 Debugger.LogError($"Invalid path to load levels from (got {path})");
             

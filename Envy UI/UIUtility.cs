@@ -20,6 +20,9 @@ public class UIUtility : MonoBehaviour
     }
     public void OpenLevelsFolder()
     {
+        if (!Directory.Exists(EnvyUtility.ConfigPath))
+            Directory.CreateDirectory(EnvyUtility.ConfigPath);
+        
         Application.OpenURL("file://" + EnvyUtility.ConfigPath.Replace("\\", "/"));
     }
 
@@ -52,6 +55,8 @@ public class UIUtility : MonoBehaviour
     }
     public void OpenCredits()
     {
+        if (!Directory.Exists(EnvyUtility.ConfigPath))
+            Directory.CreateDirectory(EnvyUtility.ConfigPath);
         if (!File.Exists(EnvyUtility.CreditsLevelPath))
         {
             if(Application.internetReachability == NetworkReachability.NotReachable) return;
