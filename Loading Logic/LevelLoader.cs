@@ -95,7 +95,7 @@ namespace EnvyLevelLoader.Loaders
 
             var loadingScreenOG = Plugin.menu.LoadAsset<GameObject>("LoadingALevelBlocker");
             LoadingLevelsBlocker info = null;
-            if (loadingScreenOG != null)
+            if (loadingScreenOG != null && EnvySettingsManager.GetBool("enableLoadingScreen", true))
             {
                 Debugger.Log("Loading loading screen...");
                 var canvasForEnvyInstance = UnityEngine.Object.Instantiate(Plugin.canvasForEnvy, null);
