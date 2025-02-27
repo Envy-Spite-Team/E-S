@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections;
+using UnityEngine;
 
 namespace EnvyLevelLoader.UI
 {
@@ -9,7 +11,7 @@ namespace EnvyLevelLoader.UI
 
         public void Update()
         {
-            transform.position += dir * (speed * Time.deltaTime);
+            transform.position += dir * (speed * Time.unscaledDeltaTime);
         }
     }
 }

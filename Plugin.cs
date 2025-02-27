@@ -97,6 +97,20 @@ namespace EnvyLevelLoader
                         GameObject target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "PauseMenu");
                         if (target == null)
                         {
+                            PauseMenu[] pauseMenu = Resources.FindObjectsOfTypeAll<PauseMenu>();
+                            Scene s = SceneManager.GetActiveScene();
+                            foreach (var p in pauseMenu)
+                            {
+                                if(p.gameObject.scene != s)
+                                    continue;
+                                if(p.gameObject.scene.name != s.name)
+                                    continue;
+                                if((p.transform.parent?.name ?? "").ToLower().Contains("canvas"))
+                                    target = p.gameObject;
+                            }
+                        }
+                        if (target == null)
+                        {
                             EnvyUtility.RunOnMainThread(a, 0.25f);
                         }
 
