@@ -35,9 +35,7 @@ namespace EnvyLevelLoader.Loaders
                         return null;
                     }
 
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, buffer.Length);
-                    return AssetBundle.LoadFromMemory(buffer);
+                    return AssetBundle.LoadFromStream(stream);
                 }
             }
             catch (Exception ex)

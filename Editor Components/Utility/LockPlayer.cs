@@ -20,7 +20,7 @@ namespace EnvyLevelLoader
                     if (includeScale)
                         transform.localScale = NewMovement.Instance.transform.localScale;
                 }
-                catch (Exception e) { }
+                catch (Exception) { }
             }
             try
             {
@@ -29,7 +29,7 @@ namespace EnvyLevelLoader
                 if (includeScale)
                     NewMovement.Instance.transform.localScale = transform.localScale;
             }
-            catch (Exception e) { }
+            catch (Exception) { }
         }
     }
 }
