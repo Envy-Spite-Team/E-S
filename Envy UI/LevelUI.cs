@@ -13,6 +13,14 @@ using UnityEngine.UI;
 namespace EnvyLevelLoader.UI
 {
     [RequireComponent(typeof(Button))]
+    public class SubLevelUI : MonoBehaviour
+    {
+        public RawImage Thumbnail;
+        public TextMeshProUGUI Title;
+        public RankIcon RankIcon;
+    }
+    
+    [RequireComponent(typeof(Button))]
     public class LevelUI : MonoBehaviour
     {
         [HideInInspector]
@@ -30,6 +38,10 @@ namespace EnvyLevelLoader.UI
         public RankIcon RankIcon;
 
         public Button LevelInfo;
+
+        [Header("Sub Level UI")]
+        public SubLevelUI SubLevelTemplate;
+        public Transform SubLevelContainer;
 
         void Start()
         {
