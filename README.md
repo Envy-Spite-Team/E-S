@@ -1,9 +1,8 @@
-# hi hello yes
-I know this is marked as a "rewrite" but i used alotta of doomahs code and just cleaned it into this format.
-I made sure to use asmuch of the previous code as possible but just cleaner to avoid work being wasted!
-
-# Envy & Spite
+# Envy & Spite \[re-written\]
 The Offical Envy Level Loader repo.
+This is the codebase that is used post 1.7.0
+This was made to make the envy code easier to work with and maintain.
+Be aware not all code was written, that would be a bit mean now wouldn't it.
 
 Our discord server is [here](https://discord.gg/RY8J67neJ9)
 
