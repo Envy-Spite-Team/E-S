@@ -83,7 +83,7 @@ namespace EnvyLevelLoader
         public void LoadLeaderboardEntries()
         {
             envyLeaderboardEntries = new List<EnvyLeaderboardEntry>();
-            // TODO : LINK TO ENVYDL
+            // TODO: LINK TO ENVYDL
             Task.Run(() => {
                 Task<string> json = EnvyUtility.GetLeaderboardsJson("cool");
                 json.Wait();

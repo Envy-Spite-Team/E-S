@@ -159,7 +159,7 @@ namespace EnvyLevelLoader
             });
         }
 
-        public async Task GetTicket() //TODO : use this for custom leaderboards
+        public async Task GetTicket() //TODO: use this for custom leaderboards
         {
             NetIdentity id = new Steamworks.Data.NetIdentity();
             AuthTicket _ticketTask = await SteamUser.GetAuthSessionTicketAsync(id);

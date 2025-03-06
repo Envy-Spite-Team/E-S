@@ -204,7 +204,7 @@ namespace EnvyLevelLoader
         public static async Task<string> GetLeaderboardsJson(string levelName)
         {
             Debugger.Log("GetLeaderboardsJson");
-            string url = EnvyUtility.EnvyLeaderboardsServer + $"getLeaderboard/level={levelName}"; // TODO : unhard code this (its hard coded for testing)
+            string url = EnvyUtility.EnvyLeaderboardsServer + $"getLeaderboard/level={levelName}";
 
             using (UnityWebRequest request = UnityWebRequest.Get(url))
             {

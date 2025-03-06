@@ -12,7 +12,7 @@ namespace EnvyLevelLoader.UI
         public Toggle enableCircuitBackground;
         public Toggle enableLoadingScreen;
         public Toggle showMessageOfTheDay;
-        public Toggle patchNewEnemies; // TODO : implement
+        public Toggle patchNewEnemies; // TODO: implement
         public TMP_InputField windowTitleInput;
 
         [Header("Other")]

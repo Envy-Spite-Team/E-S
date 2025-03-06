@@ -136,7 +136,7 @@ namespace EnvyLevelLoader.Loaders
             if(targetScene == EnvyUtility.UnknownScene)
                 targetScene = levelTarget.LoadedBundle.GetAllScenePaths().FirstOrDefault();
 
-            IsOnlineLevel = false; // TODO : LINK TO ENVYDL
+            IsOnlineLevel = false; // TODO: LINK TO ENVYDL
             IsCustomLevel = true;
             CurrentLevel = levelTarget;
 
