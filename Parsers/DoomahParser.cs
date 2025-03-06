@@ -14,17 +14,20 @@ namespace EnvyLevelLoader.Parsers
     /// </summary>
     public static class DoomahParser
     {
-        public static EnvyLevel ParseLevelInfo(ZipArchive archive)
+        public static EnvyLevel ParseLevelInfo(ZipArchive archive, string fileName = "")
         {
             ZipArchiveEntry infoTxtEntry = archive.GetEntry("info.txt");
             EnvyLevel levelInfo = null;
             if (infoTxtEntry == null)
             {
-                Debug.LogWarning("info.txt not found in archive. Applying fake fix...");
-                levelInfo = new EnvyLevel();
-                levelInfo.Author = "Unknown Author";
-                levelInfo.Name = "Unknown Name";
-                levelInfo.IsCampagin = false; // Set to false by default
+                Debug.LogWarning("info.txt not found in archive. Applying fix...");
+                levelInfo = new EnvyLevel
+                {
+                    Author = "Unknown Author",
+                    Name = string.IsNullOrWhiteSpace(fileName) ? "Unknown Name" : Path.GetFileNameWithoutExtension(fileName),
+                    IsCampagin = false, // Set to false by default
+                    Version = "doomah.0.9"
+                };
             }
             else
             {
@@ -63,6 +66,7 @@ namespace EnvyLevelLoader.Parsers
             if (lines.Length > 0) info.Author = lines[0].Trim();
             if (lines.Length > 1) info.Name = lines[1].Trim();
             info.IsCampagin = false; // Set to false by default
+            info.Version = "doomah.1.0";
             return info;
         }
     }

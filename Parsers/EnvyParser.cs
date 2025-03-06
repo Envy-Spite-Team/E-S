@@ -18,6 +18,7 @@ namespace EnvyLevelLoader.Parsers
     {
         public static EnvyLevel ParseLevelInfo(ZipArchive archive)
         {
+            Debug.LogWarning("the .envy format isn't finsihed, this might break! (besides how did u even make a .envy)");
             ZipArchiveEntry infoJsonEntry = archive.GetEntry("info.json");
             if (infoJsonEntry == null)
             {

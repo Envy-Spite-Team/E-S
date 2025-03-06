@@ -424,7 +424,7 @@ namespace EnvyLevelLoader
                 EnvyLevel level = null;
                 foreach (var loadedLevel in LevelsList.LoadedLevels) // check if the level is already loaded somewhat
                 {
-                    if(Path.GetFileName(loadedLevel.FilePath) == Path.GetFileName(fileName))
+                    if(Path.GetFileName(loadedLevel.FilePath) == Path.GetFileName(fileName) && File.GetLastWriteTime(fileName) == loadedLevel.EditedDate)
                         level = loadedLevel;
                 }
                 if (level == null)

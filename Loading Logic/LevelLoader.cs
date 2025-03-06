@@ -46,6 +46,7 @@ namespace EnvyLevelLoader.Loaders
         /// Loads a EnvyLevel. Used internally, see <see cref="GetLevelKey"/> and <see cref="SceneHelper.LoadScene"/> for loading levels manually.
         /// </summary>
         /// <param name="levelTarget">The level to load.</param>
+        /// <param name="targetScene">The scene within the level to load.</param>
         /// <returns>If the level is a valid level.</returns>
         public static bool LoadLevel(EnvyLevel levelTarget, string targetScene = "")
         {
@@ -59,7 +60,7 @@ namespace EnvyLevelLoader.Loaders
             bool canUnloadAndLoad = true;
             if (CurrentLevel != null)
             {
-                if (CurrentLevel.FilePath == levelTarget.FilePath)
+                if (CurrentLevel.FilePath == levelTarget.FilePath && CurrentLevel.EditedDate == levelTarget.EditedDate)
                 {
                     canUnloadAndLoad = false;
                     if (levelTarget.LoadedBundle == null)
@@ -70,6 +71,51 @@ namespace EnvyLevelLoader.Loaders
                 }
             }
             
+            if (MonoSingleton<OptionsManager>.Instance != null)
+            {
+                if (!MonoSingleton<OptionsManager>.Instance.paused)
+                {
+                    MonoSingleton<OptionsManager>.Instance.Pause();
+                    MonoSingleton<OptionsManager>.Instance.dontUnpause = true;
+                }
+            }
+
+            if(!EnvySettingsManager.GetBool("enableLoadingScreen", true))
+                SceneHelper.ShowLoadingBlocker();
+
+            if (!canUnloadAndLoad)
+            {
+                var loadingScreenOG = Plugin.menu.LoadAsset<GameObject>("LoadingALevelBlocker");
+                LoadingLevelsBlocker info = null;
+                if (loadingScreenOG != null && EnvySettingsManager.GetBool("enableLoadingScreen", true))
+                {
+                    Debugger.Log("Loading loading screen...");
+                    var canvasForEnvyInstance = UnityEngine.Object.Instantiate(Plugin.canvasForEnvy, null);
+                    var loadingScreen = UnityEngine.Object.Instantiate(loadingScreenOG, canvasForEnvyInstance.transform);
+                    loadingScreen.SetActive(true);
+                    UnityEngine.Object.DontDestroyOnLoad(canvasForEnvyInstance);
+                    info = loadingScreen.GetComponentInChildren<LoadingLevelsBlocker>();
+                    info.Text.text = "[ LOADING LEVEL DATA ]";
+                    Debugger.Log($"{loadingScreenOG} -> {loadingScreen} and {info}");
+                }
+            
+                EnvyUtility.RunOnMainThread(() =>
+                {
+                    if(info != null)
+                        UnityEngine.Object.DestroyImmediate(info.GetComponentInParent<Transform>().gameObject);
+                    INTERNAL_LoadLevel(levelTarget, targetScene, canUnloadAndLoad);
+                }, 0.125f);
+            }
+            else
+            {
+                INTERNAL_LoadLevel(levelTarget, targetScene, canUnloadAndLoad);
+            }
+            
+            return true;
+        }
+
+        static void INTERNAL_LoadLevel(EnvyLevel levelTarget, string targetScene = "", bool canUnloadAndLoad = false)
+        {
             if(canUnloadAndLoad)
             {
                 if (CurrentLevel != null)
@@ -178,8 +224,6 @@ namespace EnvyLevelLoader.Loaders
             {
                 asyncOp!.allowSceneActivation = true;
             }
-            
-            return true;
         }
 
         private const int loadingSize = 24;
@@ -228,7 +272,7 @@ namespace EnvyLevelLoader.Loaders
                 EnvyLevel level = null;
 
                 if (isDoomah)
-                    level = DoomahParser.ParseLevelInfo(archive);
+                    level = DoomahParser.ParseLevelInfo(archive, Path.GetFileName(path));
                 else
                     level = EnvyParser.ParseLevelInfo(archive);
 

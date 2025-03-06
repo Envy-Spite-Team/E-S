@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<AssemblyName>DoomahLevelLoader</AssemblyName>
 		<Description>Now called EnvyLevelLoader. This is a custom level loader for ULTRAKILL.</Description>
-		<Version>1.8.0</Version>
+		<Version>1.8.2</Version>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>preview</LangVersion>
 		<BaseOutputPath>Builds</BaseOutputPath>
@@ -79,12 +79,6 @@
 	  </Reference>
 	  <Reference Include="Mono.Cecil.Rocks">
 	    <HintPath>Libraries\Bepinex\Mono.Cecil.Rocks.dll</HintPath>
-	  </Reference>
-	  <Reference Include="MonoMod.RuntimeDetour">
-	    <HintPath>Libraries\Bepinex\MonoMod.RuntimeDetour.dll</HintPath>
-	  </Reference>
-	  <Reference Include="MonoMod.Utils">
-	    <HintPath>Libraries\Bepinex\MonoMod.Utils.dll</HintPath>
 	  </Reference>
 	  <Reference Include="Naelstrof.JigglePhysics">
 	    <HintPath>Libraries\Naelstrof.JigglePhysics.dll</HintPath>

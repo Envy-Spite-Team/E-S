@@ -85,6 +85,18 @@ namespace EnvyLevelLoader.Loaders
         public Texture2D CampaginThumbnail;
         [SerializeField]
         public string CampaginThumbnailPath;
+        
+        // versions are to help with the future .envy system but works with doomahs too
+        // here is the list of existing/planned supported file formats:
+        // [implemented] unknown -> doomah.0.1
+        // [not implemented] ancient doomah (prefab not scene file) -> doomah.0.5
+        // [implemented] missing info.txt doomah -> doomah.0.9
+        // [implemented] pre-revamp doomah -> doomah.1.0
+        // [not implemented (no good way to check atm)] post-revamp doomah -> doomah.1.1
+        //
+        // [not implemented] envy -> envy.1.0
+        [SerializeField]
+        public string Version = "doomah.0.1";
 
         // for checking if we should re-load the file
         [NonSerialized]

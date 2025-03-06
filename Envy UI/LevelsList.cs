@@ -168,6 +168,25 @@ namespace EnvyLevelLoader.UI
                 }
             }
 
+            if (blocker)
+            {
+                Title.text = $"<b>Combining level parts...</b>";
+                Info.text = "";
+                Info.autoSizeTextContainer = true;
+            }
+            bool canGo = false;
+            int maxWait = 960*2;
+            Task.Run(async () =>
+            {
+                await Merger.MergeFiles();
+                canGo = true;
+            });
+            while ((!canGo) && maxWait > 0)
+            {
+                maxWait--;
+                yield return new WaitForSecondsRealtime(0.125f/2.0f);
+            }
+            
             int l = 1;
             if (blocker)
             {
