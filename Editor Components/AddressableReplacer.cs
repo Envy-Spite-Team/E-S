@@ -29,8 +29,22 @@ namespace DoomahLevelLoader.UnityComponents
 
         private void OnEnable()
         {
-            Debugger.Log("HIIIIIIII SDASD ASD " + transform.name + "-> " + targetAddress);
             Activate();
+        }
+
+        public static string FixAddress(string address)
+        {
+            string newAddress = address;
+            if (address.Contains("StatueEnemy"))
+            {
+                newAddress = "Assets/Prefabs/Enemies/Cerberus.prefab";
+            }
+            else if (address.Contains("StatueFake"))
+            {
+                newAddress = "Assets/Prefabs/Enemies/CerberusStatue.prefab";
+            }
+            Debugger.Log($"{address} -> {newAddress}");
+            return newAddress;
         }
 
         private bool _activated = false;
@@ -88,6 +102,7 @@ namespace DoomahLevelLoader.UnityComponents
         
         public void Activate()
         {
+            targetAddress = FixAddress(targetAddress);
             Debugger.Log("HIIIIIIII SDASD ASD " + transform.name + "-> " + targetAddress);
             if (oneTime && _activated)
                 return;

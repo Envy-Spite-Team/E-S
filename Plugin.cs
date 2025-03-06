@@ -81,12 +81,15 @@ namespace EnvyLevelLoader
                 {
                     ShaderManager.CreateShaderDictionary();
                     
-                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom");
                     ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Player Only");
-                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Prime");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom");
                     ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Secret");
-                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Shop.prefab");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Prime");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Pit");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Special Rooms/FirstRoom Encore.prefab");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Special Rooms/FinalRoom Encore.prefab");
                     ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Special Rooms/FinalRoom.prefab");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Shop.prefab");
                 }
 
                 if (menuPrefab == null)
