@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Linq.Expressions;
 using System.Threading;
+using DoomahLevelLoader;
 using EnvyLevelLoader.UI;
 using TMPro;
 using UnityEngine.AddressableAssets;
@@ -189,7 +190,17 @@ namespace EnvyLevelLoader.Loaders
                 Camera mainCamera = Camera.main;
                 if(mainCamera != null)
                     mainCamera.clearFlags = CameraClearFlags.Skybox;
-
+                
+                EnvyUtility.RunOnMainThread(() =>
+                {
+                    var challengeText = EnvyUtility.FindObjectEvenIfDisabled("Player",
+                        "Main Camera/HUD Camera/HUD/FinishCanvas/Panel/Challenge/ChallengeText");
+                    if (challengeText != null && !ChallengeInfo.HasRanThisScene)
+                    {
+                        challengeText.GetComponentInChildren<TextMeshProUGUI>()!.text = "NO CHALLENGE AVAILABLE FOR THIS LEVEL";
+                    }
+                }, 0.125f);
+                
                 if (Path.GetFileName(levelTarget.FilePath) == Path.GetFileName(EnvyUtility.CreditsLevelPath))
                 {
                     EnvyUtility.RunOnMainThread(() =>
