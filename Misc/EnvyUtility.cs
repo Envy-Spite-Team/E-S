@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -129,6 +130,24 @@ namespace EnvyLevelLoader
             {
                 input.CopyTo(reader);
                 return reader.ToArray();
+            }
+        }
+        
+        public static bool IsZipValid(string path)
+        {
+            try
+            {
+                using (var stream = new FileStream(path, FileMode.Open))
+                {
+                    int a = stream.ReadByte();
+                    int b = stream.ReadByte();
+                    int ab = a | (b << 8);
+                    return ab == 19280;
+                }
+            }
+            catch (InvalidDataException)
+            {
+                return false;
             }
         }
 

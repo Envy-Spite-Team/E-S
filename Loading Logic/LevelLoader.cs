@@ -15,6 +15,7 @@ using DoomahLevelLoader;
 using EnvyLevelLoader.UI;
 using TMPro;
 using UnityEngine.AddressableAssets;
+using UnityEngine.AI;
 using UnityEngine.UI;
 using Object = System.Object;
 
@@ -133,6 +134,13 @@ namespace EnvyLevelLoader.Loaders
             Debugger.Log($"Loading envy level {levelTarget.Name} with scene {targetScene}");
 
             Debugger.Log("Got bundle as " + levelTarget.LoadedBundle);
+
+            bool ignoreOldDoomah = levelTarget.LoadedBundle.isStreamedSceneAssetBundle;
+            if (levelTarget is PrefabDoomahParser.PrefabEnvyLevel && !ignoreOldDoomah)
+            {
+                Debugger.Log("Current level is a prefab level, applying fixes...");
+                targetScene = "this is not a scene";
+            }
             if(targetScene == EnvyUtility.UnknownScene)
                 targetScene = levelTarget.LoadedBundle.GetAllScenePaths().FirstOrDefault();
 
@@ -153,87 +161,138 @@ namespace EnvyLevelLoader.Loaders
                 Debugger.Log($"{loadingScreenOG} -> {loadingScreen} and {info}");
             }
             
-            var asyncOp = SceneManager.LoadSceneAsync(targetScene);
-            asyncOp!.allowSceneActivation = false;
-            asyncOp!.completed += op =>
+            if (levelTarget is PrefabDoomahParser.PrefabEnvyLevel && !ignoreOldDoomah)
             {
-                IsCustomLevel = true;
-                SceneHelper.DismissBlockers();
-                
-                // fix ultrakill stuff
-                try
+                if (info)
+                    info.Text.text = "[ LOADING SANDBOX ]";
+                Addressables.LoadSceneAsync("uk_construct")!.Completed += (op) =>
                 {
-                    StockMapInfo info = UnityEngine.Object.FindObjectOfType<StockMapInfo>();
+                    if (info)
+                        UnityEngine.Object.Destroy(info.GetComponentInParent<Transform>().gameObject, 0.125f);
+                    IsCustomLevel = true;
+                    GameObject sandboxMap = CurrentLevel.LoadedBundle.LoadAsset<GameObject>("MapBase");
+                    GameObject sandboxMapClone = UnityEngine.Object.Instantiate(sandboxMap,  new Vector3(0f, 300f, 0f), Quaternion.identity);
+                    NavMeshSurface nms = sandboxMapClone.AddComponent<NavMeshSurface>();
                     
-                    bool canOLS = true;
-                    foreach (OnLevelStart ols in Resources.FindObjectsOfTypeAll<OnLevelStart>())
-                    {
-                        if (ols.gameObject.scene == SceneManager.GetActiveScene())
-                        {
-                            canOLS = false;
-                        }
-                    }
-
-                    if (canOLS)
-                    {
-                        OnLevelStart onLevelStart = info.gameObject.AddComponent<OnLevelStart>();
-                        onLevelStart.onStart = new UltrakillEvent();
-                        onLevelStart.hideFogUntilStart = false;
-                        onLevelStart.fogHidden = false;
-                    }
-                }catch(Exception){}
-                
-                // start appling shaders
-                var dummy = new GameObject("tmp").AddComponent<Dummy>();
-                dummy.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
-                
-                Camera mainCamera = Camera.main;
-                if(mainCamera != null)
-                    mainCamera.clearFlags = CameraClearFlags.Skybox;
-                
-                EnvyUtility.RunOnMainThread(() =>
-                {
-                    var challengeText = EnvyUtility.FindObjectEvenIfDisabled("Player",
-                        "Main Camera/HUD Camera/HUD/FinishCanvas/Panel/Challenge/ChallengeText");
-                    if (challengeText != null && !ChallengeInfo.HasRanThisScene)
-                    {
-                        challengeText.GetComponentInChildren<TextMeshProUGUI>()!.text = "NO CHALLENGE AVAILABLE FOR THIS LEVEL";
-                    }
-                }, 0.125f);
-                
-                if (Path.GetFileName(levelTarget.FilePath) == Path.GetFileName(EnvyUtility.CreditsLevelPath))
-                {
+                    // start appling shaders
+                    var dummy = new GameObject("tmp").AddComponent<Dummy>();
+                    dummy.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
+                    
                     EnvyUtility.RunOnMainThread(() =>
                     {
-                        Debugger.Log("Fixing credits level font....");
-                        // we are in credits level so lets fix the font rq
-                        Material fixedMaterial = Plugin.menu.LoadAsset<Material>("CreditsFontMaterial");
-                        fixedMaterial = UnityEngine.Object.Instantiate(fixedMaterial);
-                        TMP_FontAsset fixedFont = Plugin.menu.LoadAsset<TMP_FontAsset>("CreditsFontTMP");
-                        fixedFont = UnityEngine.Object.Instantiate(fixedFont);
-                        
-                        TextMeshProUGUI[] allText = Resources.FindObjectsOfTypeAll<TextMeshProUGUI>();
-                        Scene current = SceneManager.GetActiveScene();
-                        foreach (var text in allText)
+                        var challengeText = EnvyUtility.FindObjectEvenIfDisabled("Player",
+                            "Main Camera/HUD Camera/HUD/FinishCanvas/Panel/Challenge/ChallengeText");
+                        if (challengeText != null && !ChallengeInfo.HasRanThisScene)
                         {
-                            if(text.gameObject.scene != current)
-                                continue;
-                            if(text.gameObject.scene.name != current.name)
-                                continue;
-                        
-                            text.material = fixedMaterial;
-                            text.font = fixedFont;
+                            challengeText.GetComponentInChildren<TextMeshProUGUI>()!.text = "NO CHALLENGE AVAILABLE FOR THIS LEVEL";
                         }
-                    }, 0.125f);
-                }
-            };
-            if (info != null)
-            {
-                info.StartCoroutine(INTERNAL_LoadingScreen(asyncOp, info));
+                        
+                        Scene s = SceneManager.GetActiveScene();
+                        Collider[] colliders = Resources.FindObjectsOfTypeAll<Collider>();
+                        for (int i = 0; i < colliders.Length; i++)
+                        {
+                            Collider c = colliders[i];
+                            GameObject g = c.gameObject;
+                            if(g == null) continue;
+                            if(g.scene != s) continue;
+                            if (g.transform.root != sandboxMapClone.transform) continue;
+                            
+                            // fix broken objects
+                            if (g.CompareTag("Body") && (g.GetComponentInParent<EnemyIdentifierIdentifier>() == null || g.GetComponentInParent<EnemyIdentifier>() == null))
+                            {
+                                g.tag = "Floor";
+                                g.layer = LayerMask.NameToLayer("Environment");
+                            }
+                        }
+                        
+                        nms.BuildNavMesh();
+                    }, 0.1f);
+                };
             }
             else
             {
-                asyncOp!.allowSceneActivation = true;
+                AsyncOperation asyncOp = SceneManager.LoadSceneAsync(targetScene);
+                asyncOp!.allowSceneActivation = false;
+                asyncOp!.completed += op =>
+                {
+                    IsCustomLevel = true;
+                    SceneHelper.DismissBlockers();
+                    
+                    // fix ultrakill stuff
+                    try
+                    {
+                        StockMapInfo info = UnityEngine.Object.FindObjectOfType<StockMapInfo>();
+                        
+                        bool canOLS = true;
+                        foreach (OnLevelStart ols in Resources.FindObjectsOfTypeAll<OnLevelStart>())
+                        {
+                            if (ols.gameObject.scene == SceneManager.GetActiveScene())
+                            {
+                                canOLS = false;
+                            }
+                        }
+
+                        if (canOLS)
+                        {
+                            OnLevelStart onLevelStart = info.gameObject.AddComponent<OnLevelStart>();
+                            onLevelStart.onStart = new UltrakillEvent();
+                            onLevelStart.hideFogUntilStart = false;
+                            onLevelStart.fogHidden = false;
+                        }
+                    }catch(Exception){}
+                    
+                    // start appling shaders
+                    var dummy = new GameObject("tmp").AddComponent<Dummy>();
+                    dummy.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
+                    
+                    Camera mainCamera = Camera.main;
+                    if(mainCamera != null)
+                        mainCamera.clearFlags = CameraClearFlags.Skybox;
+                    
+                    EnvyUtility.RunOnMainThread(() =>
+                    {
+                        var challengeText = EnvyUtility.FindObjectEvenIfDisabled("Player",
+                            "Main Camera/HUD Camera/HUD/FinishCanvas/Panel/Challenge/ChallengeText");
+                        if (challengeText != null && !ChallengeInfo.HasRanThisScene)
+                        {
+                            challengeText.GetComponentInChildren<TextMeshProUGUI>()!.text = "NO CHALLENGE AVAILABLE FOR THIS LEVEL";
+                        }
+                    }, 0.125f);
+                    
+                    if (Path.GetFileName(levelTarget.FilePath) == Path.GetFileName(EnvyUtility.CreditsLevelPath))
+                    {
+                        EnvyUtility.RunOnMainThread(() =>
+                        {
+                            Debugger.Log("Fixing credits level font....");
+                            // we are in credits level so lets fix the font rq
+                            Material fixedMaterial = Plugin.menu.LoadAsset<Material>("CreditsFontMaterial");
+                            fixedMaterial = UnityEngine.Object.Instantiate(fixedMaterial);
+                            TMP_FontAsset fixedFont = Plugin.menu.LoadAsset<TMP_FontAsset>("CreditsFontTMP");
+                            fixedFont = UnityEngine.Object.Instantiate(fixedFont);
+                            
+                            TextMeshProUGUI[] allText = Resources.FindObjectsOfTypeAll<TextMeshProUGUI>();
+                            Scene current = SceneManager.GetActiveScene();
+                            foreach (var text in allText)
+                            {
+                                if(text.gameObject.scene != current)
+                                    continue;
+                                if(text.gameObject.scene.name != current.name)
+                                    continue;
+                            
+                                text.material = fixedMaterial;
+                                text.font = fixedFont;
+                            }
+                        }, 0.125f);
+                    }
+                };
+                if (info != null)
+                {
+                    info.StartCoroutine(INTERNAL_LoadingScreen(asyncOp, info));
+                }
+                else
+                {
+                    asyncOp!.allowSceneActivation = true;
+                }
             }
         }
 
@@ -274,8 +333,16 @@ namespace EnvyLevelLoader.Loaders
         /// <returns>The EnvyLevel. (can be null)</returns>
         public static EnvyLevel GetLevelFromFile(string path)
         {
+            if (!EnvyUtility.IsZipValid(path))
+            {
+                Debug.LogWarning("Level at " + path + " seems to be a really old doomah file. Attempting to load via faking new methods.");
+                var level = PrefabDoomahParser.ParseLevelInfo(path);
+                level!.FilePath = path;
+                return level;
+            }
+            
             bool isDoomah = Path.GetExtension(path).ToLower() == ".doomah";
-
+            
             using (FileStream fs = new FileStream(path, FileMode.Open))
             {
                 ZipArchive archive = new ZipArchive(fs, ZipArchiveMode.Read);

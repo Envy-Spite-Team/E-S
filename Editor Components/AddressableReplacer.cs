@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using System;
+using System.Collections.Generic;
 using EnvyLevelLoader;
 using EnvyLevelLoader.Loaders;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -24,7 +25,10 @@ namespace DoomahLevelLoader.UnityComponents
         public float DamageTier;
         public float SpeedTier;
         public float HealthTier;
-
+        [Header("New")]
+        public bool usePropertyOverrides = false;
+        public Dictionary<string, object> PropertyOverrides = new Dictionary<string, object>();
+        
         internal EnemyIdentifier eid;
 
         private void OnEnable()

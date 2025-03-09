@@ -11,10 +11,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BepInEx.Logging;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Logger = BepInEx.Logging.Logger;
 using Object = UnityEngine.Object;
 
 namespace EnvyLevelLoader
@@ -24,7 +26,7 @@ namespace EnvyLevelLoader
     {
         private const string modGUID = "envyandspite.ultrakill.envylevelloader";
         private const string modName = "envylevelloader";
-        private const string modVersion = "1.8.1";
+        private const string modVersion = "1.8.2";
 
         private static readonly Harmony Harmony = new Harmony(modGUID);
 
@@ -37,6 +39,8 @@ namespace EnvyLevelLoader
 
         public static Plugin Instance { get; private set; }
         
+        internal static ManualLogSource PluginLogger => Instance.Logger;
+
         private void Awake()
         {
             Instance = this;

@@ -272,7 +272,8 @@ namespace EnvyLevelLoader
         static bool Prefix(PlayerActivator __instance)
         {
             if(!LevelLoader.IsCustomLevel) return true;
-            if (__instance.gameObject.transform.parent!.name.ToLower() == "firstroom player only")
+            if(LevelLoader.CurrentLevel.Version == EnvyLevelVersions.PreSceneDoomah) return true;
+            if ((__instance.gameObject.transform.parent?.name ?? "").ToLower() == "firstroom player only")
             {
                 __instance.activated = true;
                 return false;

@@ -10,7 +10,7 @@ namespace EnvyLevelLoader.Parsers
 {
     /// <summary>
     /// Class to parse .doomah files.
-    /// Doomah files HAVE to only use the old .txt system for compatability purposes!
+    /// Doomah files HAVE to only use the old .txt system for compatability purposes! (no info.json from the new envy format basically)
     /// </summary>
     public static class DoomahParser
     {
@@ -26,7 +26,7 @@ namespace EnvyLevelLoader.Parsers
                     Author = "Unknown Author",
                     Name = string.IsNullOrWhiteSpace(fileName) ? "Unknown Name" : Path.GetFileNameWithoutExtension(fileName),
                     IsCampagin = false, // Set to false by default
-                    Version = "doomah.0.9"
+                    Version = EnvyLevelVersions.MissingInfo
                 };
             }
             else
@@ -66,7 +66,7 @@ namespace EnvyLevelLoader.Parsers
             if (lines.Length > 0) info.Author = lines[0].Trim();
             if (lines.Length > 1) info.Name = lines[1].Trim();
             info.IsCampagin = false; // Set to false by default
-            info.Version = "doomah.1.0";
+            info.Version = EnvyLevelVersions.PreRevamp;
             return info;
         }
     }

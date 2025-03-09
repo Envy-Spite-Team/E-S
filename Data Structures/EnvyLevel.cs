@@ -52,15 +52,22 @@ namespace EnvyLevelLoader.Loaders
                 {
                     if (File.Exists(FilePath))
                     {
-                        using (var archive = new ZipArchive(File.OpenRead(FilePath), ZipArchiveMode.Read))
+                        if (Version == EnvyLevelVersions.PreSceneDoomah)
                         {
-                            foreach (ZipArchiveEntry e in archive.Entries)
+                            realBundleData = File.ReadAllBytes(FilePath);
+                        }
+                        else
+                        {
+                            using (var archive = new ZipArchive(File.OpenRead(FilePath), ZipArchiveMode.Read))
                             {
-                                if(Path.GetExtension(e.FullName) == ".bundle")
+                                foreach (ZipArchiveEntry e in archive.Entries)
                                 {
-                                    Stream s = e.Open();
-                                    realBundleData = EnvyUtility.ReadFully(s);
-                                    s.Close();
+                                    if(Path.GetExtension(e.FullName) == ".bundle")
+                                    {
+                                        Stream s = e.Open();
+                                        realBundleData = EnvyUtility.ReadFully(s);
+                                        s.Close();
+                                    }
                                 }
                             }
                         }
@@ -89,17 +96,28 @@ namespace EnvyLevelLoader.Loaders
         // versions are to help with the future .envy system but works with doomahs too
         // here is the list of existing/planned supported file formats:
         // [implemented] unknown -> doomah.0.1
-        // [not implemented] ancient doomah (prefab not scene file) -> doomah.0.5
+        // [implemented] ancient doomah (prefab not scene file) -> doomah.0.5
         // [implemented] missing info.txt doomah -> doomah.0.9
         // [implemented] pre-revamp doomah -> doomah.1.0
         // [not implemented (no good way to check atm)] post-revamp doomah -> doomah.1.1
         //
         // [not implemented] envy -> envy.1.0
         [SerializeField]
-        public string Version = "doomah.0.1";
+        public string Version = EnvyLevelVersions.Unkown;
 
         // for checking if we should re-load the file
         [NonSerialized]
         public DateTime EditedDate = DateTime.Now;
+    }
+
+    public static class EnvyLevelVersions
+    {
+        public const string Unkown = "doomah.0.1";
+        public const string PreSceneDoomah = "doomah.0.5";
+        public const string MissingInfo = "doomah.0.9";
+        public const string PreRevamp = "doomah.1.0";
+        public const string PostRevamp = "doomah.1.1";
+        
+        public const string EnvyRelease = "envy.1.0";
     }
 }

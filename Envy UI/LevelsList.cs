@@ -197,12 +197,21 @@ namespace EnvyLevelLoader.UI
             
             foreach (string file in filePaths)
             {
-                yield return new WaitForEndOfFrame();
+#if DEBUG
+                var watch = new System.Diagnostics.Stopwatch();
+                watch.Start();
+#endif
+                
                 EnvyLevel level = null;
                 try
                 {
                     level = LevelLoader.GetLevelFromFile(file);
                 }catch(Exception e){Debugger.LogWarn(e.Message);}
+                
+#if DEBUG
+                watch.Stop();
+                Debugger.Log($"Loading {Path.GetFileName(file)} took {watch.ElapsedMilliseconds}ms");
+#endif
                 
                 string error = $"<color=green>{Path.GetFileName(file)}</color>";
 
@@ -222,6 +231,7 @@ namespace EnvyLevelLoader.UI
                     Info.text = error + "<br>" + Info.text;
                 }
                 l++;
+                
                 yield return new WaitForEndOfFrame();
             }
             
