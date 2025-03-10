@@ -27,6 +27,12 @@ namespace EnvyLevelLoader
 
             public static void RunOnMainThread(Action action)
             {
+                if (EnvyUtility.IsMainThread)
+                {
+                    action();
+                    return;
+                }
+                
                 _actions.Enqueue(action);
             }
 

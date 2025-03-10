@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -76,5 +77,34 @@ namespace EnvyLevelLoader.Loaders
                 return Addressables.LoadAssetAsync<GameObject>(address).WaitForCompletion();
             }
         }
+
+        private static string KeyToFilenameLess(string key)
+        {
+            return System.IO.Path.GetDirectoryName(key) + '\\' + System.IO.Path.GetFileNameWithoutExtension(key);
+        }
+        private static bool _hasLoaded = false;
+        private static Dictionary<string, string> _fileNameNoExtToRealKey = new Dictionary<string, string>();
+        public static void PreloadAddressableKeys()
+        {
+            if (_hasLoaded) return;
+            _hasLoaded = true;
+            var timer = Stopwatch.StartNew();
+            Debugger.Log("Preloading Addressable Keys");
+            foreach (var locator in UnityEngine.AddressableAssets.Addressables.ResourceLocators)
+            {
+                foreach (var key in locator.Keys)
+                {
+                    if(_fileNameNoExtToRealKey.ContainsKey(KeyToFilenameLess(key.ToString())))
+                        continue;
+                    _fileNameNoExtToRealKey.Add(KeyToFilenameLess(key.ToString()), key.ToString());
+                }
+            }
+            Debugger.Log("Preloaded Addressable Keys in " + timer.Elapsed.Milliseconds + "ms");
+        }
+        
+        public static string FindKeyFromFileNameNoExt(string filename)
+        {
+            return _fileNameNoExtToRealKey.ContainsKey(KeyToFilenameLess(filename)) ? _fileNameNoExtToRealKey[KeyToFilenameLess(filename)] : filename;
+        } 
     }
 }

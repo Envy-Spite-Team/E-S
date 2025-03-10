@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using EnvyLevelLoader;
 using EnvyLevelLoader.Loaders;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -25,8 +26,10 @@ namespace DoomahLevelLoader.UnityComponents
         public float DamageTier;
         public float SpeedTier;
         public float HealthTier;
-        [Header("New")]
+        
+        [HideInInspector]
         public bool usePropertyOverrides = false;
+        [HideInInspector]
         public Dictionary<string, object> PropertyOverrides = new Dictionary<string, object>();
         
         internal EnemyIdentifier eid;
@@ -93,6 +96,89 @@ namespace DoomahLevelLoader.UnityComponents
                 eid.speedBuffModifier = SpeedTier;
                 eid.damageBuffModifier = DamageTier;
                 eid.BuffAll();
+            }
+
+            if (eid != null && usePropertyOverrides)
+            {
+                void ApplyPropertyOverrides()
+                {
+                    Type t = eid.GetType();
+                    foreach (var key in PropertyOverrides.Keys)
+                    {
+                        object value = PropertyOverrides[key];
+                        if (key == "health")
+                        {
+                            float? maybeHp = value as float?;
+                            if(maybeHp == null)
+                                continue;
+                            float hp = maybeHp.Value;
+                            
+                            if (eid.enemyType == EnemyType.Drone || eid.enemyType == EnemyType.Virtue)
+                            {
+                                if (!(bool) (UnityEngine.Object) eid.drone)
+                                    eid.drone = this.GetComponent<Drone>();
+                                if (!(bool) (UnityEngine.Object) eid.drone)
+                                    continue;
+                                eid.drone.health = hp;
+                            }
+                            else if (eid.enemyType == EnemyType.MaliciousFace)
+                            {
+                                if (!(bool) (UnityEngine.Object) eid.spider)
+                                    eid.spider = this.GetComponent<SpiderBody>();
+                                if (!(bool) (UnityEngine.Object) eid.spider)
+                                    continue;
+                                eid.spider.health = hp;
+                            }
+                            else
+                            {
+                                switch (eid.enemyClass)
+                                {
+                                    case EnemyClass.Husk:
+                                        if (!(bool) (UnityEngine.Object) eid.zombie)
+                                            eid.zombie = this.GetComponent<Zombie>();
+                                        if (!(bool) (UnityEngine.Object) eid.zombie)
+                                            break;
+                                        eid.zombie.health = hp;
+                                        break;
+                                    case EnemyClass.Machine:
+                                        if (!(bool) (UnityEngine.Object) eid.machine)
+                                            eid.machine = this.GetComponent<Machine>();
+                                        if (!(bool) (UnityEngine.Object) eid.machine)
+                                            break;
+                                        eid.machine.health = hp;
+                                        break;
+                                    case EnemyClass.Demon:
+                                        if (!(bool) (UnityEngine.Object) eid.statue)
+                                            eid.statue = this.GetComponent<Statue>();
+                                        if (!(bool) (UnityEngine.Object) eid.statue)
+                                            break;
+                                        eid.statue.health = hp;
+                                        break;
+                                }
+                            }
+                            eid.ForceGetHealth();
+                            continue;
+                        }
+                        FieldInfo m = t.GetField(key);
+                        if (m == null)
+                        {
+                            Debugger.LogWarn("Bad property override on addressable replacer ( '"+key+"' isn't a field)");
+                            continue;
+                        }
+
+                        try
+                        {
+                            m.SetValue(eid, value);
+                        }
+                        catch (ArgumentException e)
+                        {
+                            Debugger.LogError($"Value: {value} [{value.GetType().FullName}] doesn't match {m.FieldType.FullName}");
+                        }
+                    }
+                }
+
+                ApplyPropertyOverrides();
+                EnvyUtility.RunOnMainThread(ApplyPropertyOverrides, 0.125f);
             }
 
             if (destroyThis)

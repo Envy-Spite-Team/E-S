@@ -48,6 +48,7 @@ namespace EnvyLevelLoader
             SceneManager.sceneLoaded += (Scene s, LoadSceneMode lcm) =>
             {
                 EnvyUtility.CaptureMainThread();
+                ResourceLoader.PreloadAddressableKeys();
                 if (menu == null)
                 {
                     menu = ResourceLoader.GetBundle("envymenu");
