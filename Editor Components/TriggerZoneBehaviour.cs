@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Collections;
 using BepInEx;
 using HarmonyLib;
-using DoomahLevelLoader;
+using EnvyLevelLoader;
+using EnvyLevelLoader.UnityComponents;
 
 public class TriggerZoneBehavior : MonoBehaviour
 	{

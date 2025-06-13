@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections;
 using BepInEx;
 using HarmonyLib;
+using EnvyLevelLoader.UnityComponents;
 
 public class WaveComponent : MonoBehaviour
 {

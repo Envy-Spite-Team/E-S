@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.AddressableAssets;
 using System;
+using EnvyLevelLoader;
+using EnvyLevelLoader.Loaders;
 
 namespace DoomahLevelLoader.UnityComponents
 {
@@ -27,7 +29,7 @@ namespace DoomahLevelLoader.UnityComponents
 
             _activated = true;
 
-            GameObject targetObject = Addressables.LoadAssetAsync<GameObject>("Assets/Prefabs/Levels/Special Rooms/FinalRoom.prefab").WaitForCompletion();
+            GameObject targetObject = ResourceLoader.LoadGameobjectAtAddress("Assets/Prefabs/Levels/Special Rooms/FinalRoom.prefab");
             if (targetObject == null)
             {
                 Debugger.LogWarn($"Tried to load asset, but it does not exist");

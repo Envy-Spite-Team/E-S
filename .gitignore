@@ -1,6 +1,5 @@
 # Build results
-[Bb]in/
-[Oo]bj/
+[Bb]uild/
 
 # Sessions
 .vs/
@@ -14,3 +13,10 @@ desktop.ini
 # Misc
 Properties
 compile.bat
+/Builds/Debug
+/Libraries
+/obj/Debug
+/packages/System.Text.RegularExpressions.4.3.1
+/packages/System.IO.Compression.4.3.0
+/obj
+/bin/Debug/netstandard2.0

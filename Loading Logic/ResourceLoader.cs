@@ -1,0 +1,110 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
+
+namespace EnvyLevelLoader.Loaders
+{
+    /// <summary>
+    /// Class to load resources from the dll, currently only loads bundles.
+    /// </summary>
+    public static class ResourceLoader
+    {
+        /// <summary>
+        /// Loads bundles from the dll from the bundle directory.
+        /// </summary>
+        /// <param name="name">The bundle name.</param>
+        /// <returns>The bundle from the dll. This can return null!</returns>
+        public static AssetBundle GetBundle(string name)
+        {
+            try
+            {
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                string resourceName = $"EnvyLevelLoader.Bundles.{name}.bundle";
+                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (stream == null)
+                    {
+                        Debugger.LogError($"Resource '{name}.bundle' not found in embedded resources.");
+                        return null;
+                    }
+
+                    return AssetBundle.LoadFromStream(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debugger.LogError($"Error loading {name}: " + ex.Message);
+                return null;
+            }
+        }
+
+        private static Dictionary<string, GameObject> _loadedObjects = new Dictionary<string, GameObject>();
+        public static void PreloadGameobjectAtAddressAsync(string address)
+        {
+            if (_loadedObjects.ContainsKey(address))
+            {
+                Debugger.LogWarn("Tried to preload already preloaded gameobject!");
+                return;
+            }
+            Addressables.LoadAssetAsync<GameObject>(address)!.Completed += (x) =>
+            {
+                if (x.Status == AsyncOperationStatus.Succeeded)
+                    _loadedObjects.Add(address, x.Result);
+            };
+        }
+
+        public static bool IsGameobjectPreloaded(string address)
+        {
+            return _loadedObjects.ContainsKey(address);
+        }
+        
+        public static GameObject LoadGameobjectAtAddress(string address)
+        {
+            if (_loadedObjects.ContainsKey(address))
+            {
+                return _loadedObjects[address];
+            }
+            else
+            {
+                return Addressables.LoadAssetAsync<GameObject>(address).WaitForCompletion();
+            }
+        }
+
+        private static string KeyToFilenameLess(string key)
+        {
+            return System.IO.Path.GetDirectoryName(key) + '\\' + System.IO.Path.GetFileNameWithoutExtension(key);
+        }
+        private static bool _hasLoaded = false;
+        private static Dictionary<string, string> _fileNameNoExtToRealKey = new Dictionary<string, string>();
+        public static void PreloadAddressableKeys()
+        {
+            if (_hasLoaded) return;
+            _hasLoaded = true;
+            var timer = Stopwatch.StartNew();
+            Debugger.Log("Preloading Addressable Keys");
+            foreach (var locator in UnityEngine.AddressableAssets.Addressables.ResourceLocators)
+            {
+                foreach (var key in locator.Keys)
+                {
+                    if(_fileNameNoExtToRealKey.ContainsKey(KeyToFilenameLess(key.ToString())))
+                        continue;
+                    _fileNameNoExtToRealKey.Add(KeyToFilenameLess(key.ToString()), key.ToString());
+                }
+            }
+            Debugger.Log("Preloaded Addressable Keys in " + timer.Elapsed.Milliseconds + "ms");
+        }
+        
+        public static string FindKeyFromFileNameNoExt(string filename)
+        {
+            return _fileNameNoExtToRealKey.ContainsKey(KeyToFilenameLess(filename)) ? _fileNameNoExtToRealKey[KeyToFilenameLess(filename)] : filename;
+        } 
+    }
+}

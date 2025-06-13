@@ -1,253 +1,181 @@
-﻿using BepInEx;
-using UnityEngine;
-using System.Collections.Generic;
-using UnityEngine.SceneManagement;
+﻿using System;
+using BepInEx;
+using EnvyLevelLoader.Loaders;
+using EnvyLevelLoader.UI;
 using HarmonyLib;
-using System;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
-using System.Threading.Tasks;
-using Logic;
-using System.Reflection;
-using System.IO;
-using System.Net.Http;
-using TMPro;
 using Steamworks;
+using Steamworks.Data;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using BepInEx.Logging;
+using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Logger = BepInEx.Logging.Logger;
+using Object = UnityEngine.Object;
 
-namespace DoomahLevelLoader
+namespace EnvyLevelLoader
 {
-    [BepInPlugin("doomahreal.ultrakill.levelloader", "DoomahLevelLoader", "2.0.0")] // Make sure to change after each update!
+    [BepInPlugin(modGUID, modName, modVersion)]
     public class Plugin : BaseUnityPlugin
     {
-        private AssetBundle terminal;
-        private AssetBundle envydl_debug;
-        public static bool IsCustomLevel = false;
-        private static Plugin _instance;
+        private const string modGUID = "envyandspite.ultrakill.envylevelloader";
+        private const string modName = "envylevelloader";
+        private const string modVersion = "1.8.2";
 
-        public GameObject instantiatedDebug;
+        private static readonly Harmony Harmony = new Harmony(modGUID);
 
-        public string Version = "2.0.0"; // Make sure to change after each update!
+        public static AssetBundle menu;
+        public static GameObject menuPrefab;
+        public static GameObject iconPrefab;
+        public static GameObject canvasForEnvy;
+        public static GameObject currentMenuInstance;
+        public static GameObject currentIconInstance;
 
-        public static Plugin Instance => _instance;
+        public static Plugin Instance { get; private set; }
+        
+        internal static ManualLogSource PluginLogger => Instance.Logger;
 
-        public static string getConfigPath()
+        private void Awake()
         {
-            return Path.Combine(Paths.ConfigPath + Path.DirectorySeparatorChar + "EnvyLevels");
-        }
-
-        public static GameObject FindObjectEvenIfDisabled(string rootName, string objPath = null, int childNum = 0, bool useChildNum = false)
-        {
-            GameObject obj = null;
-            GameObject[] objs = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
-            bool gotRoot = false;
-            foreach (GameObject obj1 in objs)
+            Instance = this;
+            Debug.Log("Loading envy level loader...");
+            SceneManager.sceneLoaded += (Scene s, LoadSceneMode lcm) =>
             {
-                if (obj1.name == rootName)
+                EnvyUtility.CaptureMainThread();
+                ResourceLoader.PreloadAddressableKeys();
+                if (menu == null)
                 {
-                    obj = obj1;
-                    gotRoot = true;
-                }
-            }
-            if (!gotRoot)
-                goto returnObject;
-            else
-            {
-                GameObject obj2 = obj;
-                if (objPath != null)
-                {
-                    obj2 = obj.transform.Find(objPath).gameObject;
-                    if (!useChildNum)
+                    menu = ResourceLoader.GetBundle("envymenu");
+            
+                    Debugger.Log("Testing bundle integrity...");
+                    Object[] bundleObjects = Plugin.menu.LoadAllAssets();
+                    foreach (Object obj in bundleObjects)
                     {
-                        obj = obj2;
+                        Debugger.Log($"Found {obj.name} [{obj.GetType().FullName}] in bundle {menu.name}.");
+                    }
+                    Debugger.Log("____________________");
+            
+                    menuPrefab = menu.LoadAsset<GameObject>("EnvyMenu");
+                    iconPrefab = menu.LoadAsset<GameObject>("EnvyIcon");
+                    canvasForEnvy = menu.LoadAsset<GameObject>("CanvasForEnvy");
+                    if (canvasForEnvy != null)
+                    {
+                        canvasForEnvy.GetComponentInChildren<Canvas>().sortingOrder = 9999;
                     }
                 }
-                if (useChildNum)
-                {
-                    GameObject obj3 = obj2.transform.GetChild(childNum).gameObject;
-                    obj = obj3;
-                }
-            }
-        returnObject:
-            return obj;
-        }
-
-        private async void Awake()
-        {
-            Logger.LogInfo("If you see this, dont panick! because everything is fine :)");
-            terminal = Loader.LoadTerminal();
-
-            _instance = this;
-
-            Harmony val = new Harmony("doomahreal.ultrakill.levelloader");
-            val.PatchAll();
-
-            if (!Directory.Exists(getConfigPath()))
-            {
-                Directory.CreateDirectory(getConfigPath());
-            }
-
-            await Merger.MergeFiles();
-
-            // After merging, load the levels
-            Loaderscene.LoadLevels();
-
-            SceneManager.sceneLoaded += OnSceneLoaded;
-            SceneManager.sceneUnloaded += OnSceneUnloaded;
-        }
-
-        void Update() //this should fix the envy button not appearing sometimes --triggered
-        {
-            if(!hasMadeEnvyScreen)
-            {
+                
                 bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
                 bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
 
-                if (isNotBootstrapOrIntro)
-                    InstantiateEnvyScreen(isMainMenu);
-            }
-        }
-
-        private void OnDestroy()
-        {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            SceneManager.sceneUnloaded -= OnSceneUnloaded;
-        }
-
-        static bool hasMadeEnvyScreen = false;
-        static ShowDebugInfo ShowDebugInfoInstance = new ShowDebugInfo();
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            hasMadeEnvyScreen = false;
-            bool isNotBootstrapOrIntro = SceneHelper.CurrentScene != "Bootstrap" && SceneHelper.CurrentScene != "Intro";
-            bool isMainMenu = SceneHelper.CurrentScene == "Main Menu";
-
-            if (isNotBootstrapOrIntro)
-            {
-                ShaderManager.CreateShaderDictionary();
-                InstantiateEnvyScreen(isMainMenu);
-            }
-
-            if (ShaderManager.shaderDictionary.Count <= 0)
-            {
-                StartCoroutine(ShaderManager.LoadShadersAsync());
-            }
-
-            // this was broken af with the new code
-            if (!Loaderscene.IsSceneInAnyAssetBundle(scene.name))
-            {
-                IsCustomLevel = false;
-                Loaderscene.currentLevelName = null;
-            }
-            else IsCustomLevel = true;
-
-            // Register cheats
-            if (Plugin.IsCustomLevel)
-            {
-                GameObject debugInfoPrefab = terminal.LoadAsset<GameObject>("DebugInfo.prefab");
-                instantiatedDebug = Instantiate(debugInfoPrefab);
-
-                instantiatedDebug.transform.SetParent(GameObject.Find("/Canvas").transform, false);
-                instantiatedDebug.SetActive(false);
-                instantiatedDebug.transform.localPosition = new Vector3(-699, 60, 0);
-                instantiatedDebug.transform.localScale = new Vector3(2, 2, 2);
-
-                CheatsManager.Instance.RegisterCheat(ShowDebugInfoInstance, "Envy");
-                GameObject pt = GameObject.Find("/Canvas/Main Menu (1)/EnvyScreen(Clone)/PlayTab");
-                Debugger.Log($"ASJIKPOGJKDGJKDJ {pt}");
-                if (pt != null) {
-                    pt.transform.localScale *= 1.25f;
-                }
-            }
-            else
-            {
-                try
+                if (!Directory.Exists(EnvyUtility.ConfigPath))
+                    Directory.CreateDirectory(EnvyUtility.ConfigPath);
+                
+                if (s.name != (LevelLoader.CurrentLevel?.Name ?? ""))
                 {
-                    CheatsManager.Instance.allRegisteredCheats["Envy"].Remove(ShowDebugInfoInstance);
+                    LevelLoader.IsCustomLevel = false;
+                    Debug.Log("Not envy level");
                 }
-                catch { }
-            }
+                
+                if (isMainMenu)
+                {
+                    ShaderManager.CreateShaderDictionary();
+                    
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Player Only");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Secret");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Prime");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("FirstRoom Pit");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Special Rooms/FirstRoom Encore.prefab");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Special Rooms/FinalRoom Encore.prefab");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Special Rooms/FinalRoom.prefab");
+                    ResourceLoader.PreloadGameobjectAtAddressAsync("Assets/Prefabs/Levels/Shop.prefab");
+                }
+
+                if (menuPrefab == null)
+                { Debugger.LogWarn("menuPrefab is null"); return; }
+                if (iconPrefab == null)
+                { Debugger.LogWarn("iconPrefab is null"); return; }
+                if (canvasForEnvy == null)
+                { Debugger.LogWarn("canvasForEnvy is null"); return; }
+
+                if (isMainMenu)
+                {
+                    GameObject target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "Chapter Select");
+                    LoadEnvyMenu(target);
+                }
+                else
+                {
+                    // delayed to let player to load in
+                    Action a = new Action(() => Debugger.LogError("Action a failed to setup??"));
+                    a = () =>
+                    {
+                        GameObject target = EnvyUtility.FindObjectEvenIfDisabled("Canvas", "PauseMenu");
+                        if (target == null)
+                        {
+                            PauseMenu[] pauseMenu = Resources.FindObjectsOfTypeAll<PauseMenu>();
+                            Scene s = SceneManager.GetActiveScene();
+                            foreach (var p in pauseMenu)
+                            {
+                                if(p.gameObject.scene != s)
+                                    continue;
+                                if(p.gameObject.scene.name != s.name)
+                                    continue;
+                                if((p.transform.parent?.name ?? "").ToLower().Contains("canvas"))
+                                    target = p.gameObject;
+                            }
+                        }
+                        if (target == null)
+                        {
+                            EnvyUtility.RunOnMainThread(a, 0.25f);
+                        }
+
+                        LoadEnvyMenu(target);
+                    };
+                    EnvyUtility.RunOnMainThread(a, 0.25f);
+                }
+            };
+            Harmony.PatchAll();
+            Debug.Log("Loaded envy level loader!");
         }
 
-        public static void Fixorsmth()
+        private void LoadEnvyMenu(GameObject target)
         {
-            SceneHelper.CurrentScene = SceneManager.GetActiveScene().name;
-            Camera mainCamera = Camera.main;
-            IsCustomLevel = true;
-            mainCamera.clearFlags = CameraClearFlags.Skybox;
-            _instance.StartCoroutine(ShaderManager.ApplyShadersAsyncContinuously());
-        }
-
-        private void OnSceneUnloaded(Scene scene)
-        {
-            if (SceneHelper.CurrentScene == "Main Menu")
+            if (target == null)
             {
-                InstantiateEnvyScreen(true);
-                ShaderManager.CreateShaderDictionary();
-            }
-        }
-
-        private void InstantiateEnvyScreen(bool mainMenu)
-        {
-            GameObject envyScreenPrefab = terminal.LoadAsset<GameObject>("EnvyScreen.prefab");
-            // Fun Fact: my dumbass forgot to put envyscreen in the assetbundle and i was stuck debugging it for 2 hours RAHHHHHHHHHHHHH --thebluenebula
-            // smart ass --doomah
-            // i find it funny how your laptop broke right after saying that --thebluenebula
-            if (envyScreenPrefab == null)
-            {
-                Debugger.LogError("EnvyScreen prefab not found in the terminal bundle.");
+                Debugger.LogWarn("target is null");
                 return;
             }
-
-            GameObject canvasObject = GameObject.Find("/Canvas/Main Menu (1)");
-            if (mainMenu == false)
+            var canvasForEnvyInstance = Instantiate(canvasForEnvy, null);
+            currentMenuInstance = GameObject.Instantiate(menuPrefab, canvasForEnvyInstance.transform, false);
+            currentMenuInstance.SetActive(false);
+            currentIconInstance = GameObject.Instantiate(iconPrefab, target.transform, false);
+            currentIconInstance.SetActive(true);
+            currentIconInstance.GetComponentInChildren<Button>().onClick = new Button.ButtonClickedEvent();
+            currentIconInstance.GetComponentInChildren<Button>().onClick.AddListener(() =>
             {
-                canvasObject = FindObjectEvenIfDisabled("Canvas", "PauseMenu");
-            }
+                Debugger.Log("opening envy menu");
+                currentMenuInstance.SetActive(true);
+            });
+        }
 
-            if (canvasObject == null)
+        public async Task GetTicket() //TODO: use this for custom leaderboards
+        {
+            NetIdentity id = new Steamworks.Data.NetIdentity();
+            AuthTicket _ticketTask = await SteamUser.GetAuthSessionTicketAsync(id);
+
+            byte[] zba = _ticketTask.Data;
+            StringBuilder hex = new StringBuilder(zba.Length * 2);
+            foreach (byte b in zba)
             {
-                return;
-            }
-
-            GameObject instantiatedObject = Instantiate(envyScreenPrefab);
-
-            instantiatedObject.transform.SetParent(canvasObject.transform, false);
-            instantiatedObject.transform.localPosition = Vector3.zero;
-            instantiatedObject.transform.localScale = new Vector3(1f, 1f, 1f);
-            Transform play = instantiatedObject.transform.Find("PlayTab");
-            Transform brows = instantiatedObject.transform.Find("BrowseTab");
-            play.localScale *= 1.35f;
-            brows.localScale *= 1.35f;
-
-            hasMadeEnvyScreen = true;
-
-            if (SteamClient.SteamId.Value == 76561198275729385 || SteamClient.SteamId.Value == 76561199017586561) //doomah what the fuck is your stea- oh yeah... --triggered
-            {
-                if(envydl_debug == null)
-                    envydl_debug = Loader.LoadEnvyDLDev();
-                GameObject menu = envydl_debug.LoadAsset<GameObject>("envy_dl_dev_menu.prefab");
-                GameObject menu_btn = envydl_debug.LoadAsset<GameObject>("envy_dl_debug.prefab");
-                if (menu == null)
-                { Debugger.LogError("envy_dl_dev_menu is null!"); return; }
-                if (menu_btn == null)
-                { Debugger.LogError("envy_dl_debug is null!"); return; }
-
-                menu = Instantiate(menu);
-                menu.transform.SetParent(canvasObject.transform, false);
-                menu.SetActive(false);
-
-                menu_btn = Instantiate(menu_btn);
-                menu_btn.transform.SetParent(canvasObject.transform, false);
-                menu_btn.SetActive(true);
-
-                menu_btn.GetComponent<Button>().onClick.AddListener(() =>
-                {
-                    menu.SetActive(!menu.activeSelf);
-                });
-
-                menu.AddComponent<EnvyDownloaderMenu_DEBUG>().menuButton = menu_btn;
+                hex.AppendFormat("{0:x2}", b);
             }
         }
+
     }
 }
